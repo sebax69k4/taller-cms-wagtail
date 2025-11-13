@@ -1,0 +1,71 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Recepcionista{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-clipboard-list"></i> Panel de Recepción</h1>
+    </div>
+    <div class="col text-end">
+        <a href="/admin/snippets/gestion/ordentrabajo/add/" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nueva Orden
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Órdenes Recientes</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Fecha Ingreso</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes_recientes %}
+                <tr>
+                    <td><strong>#{{ orden.id }}</strong></td>
+                    <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
+                    <td>{{ orden.vehiculo.patente }}</td>
+                    <td>
+                        <span class="badge bg-info">{{ orden.get_estado_display }}</span>
+                    </td>
+                    <td>{{ orden.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-primary">Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Accesos Rápidos</h5>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'gestion:lista_clientes' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-users"></i> Ver Clientes
+                    </a>
+                    <a href="{% url 'gestion:lista_vehiculos' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-car"></i> Ver Vehículos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

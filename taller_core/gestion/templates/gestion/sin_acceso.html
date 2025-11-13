@@ -1,0 +1,12 @@
+{% extends "gestion/base.html" %}
+{% block title %}Sin Acceso{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <i class="fas fa-exclamation-triangle fa-5x text-warning mb-4"></i>
+    <h1>Sin Acceso</h1>
+    <p class="lead">No tienes permisos asignados para acceder al sistema.</p>
+    <p>Por favor contacta al administrador.</p>
+    <a href="{% url 'gestion:logout' %}" class="btn btn-secondary">Cerrar Sesión</a>
+</div>
+{% endblock %}

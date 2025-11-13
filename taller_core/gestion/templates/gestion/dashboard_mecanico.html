@@ -1,0 +1,76 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Mi Dashboard - Mecánico{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-tools"></i> Mis Órdenes de Trabajo</h1>
+        <p class="text-muted">Vista de Mecánico: {{ mecanico.nombre }}</p>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ ordenes.count }}</h2>
+                <p class="mb-0">Órdenes Activas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ ordenes|length }}</h2>
+                <p class="mb-0">En Reparación</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Mis Órdenes Asignadas</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Vehículo</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes %}
+                <tr>
+                    <td><strong>#{{ orden.id }}</strong></td>
+                    <td>{{ orden.vehiculo.patente }} - {{ orden.vehiculo.marca }}</td>
+                    <td>
+                        <span class="badge bg-{% if orden.estado == 'en_reparacion' %}warning{% else %}info{% endif %}">
+                            {{ orden.get_estado_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if orden.prioridad == 'alta' %}danger{% elif orden.prioridad == 'media' %}warning{% else %}secondary{% endif %}">
+                            {{ orden.get_prioridad_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-primary">Ver</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">No tienes órdenes asignadas</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
