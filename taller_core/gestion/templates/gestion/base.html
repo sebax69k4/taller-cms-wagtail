@@ -1,5 +1,6 @@
 {# taller_core/gestion/templates/gestion/base.html #}
 {% load static %}
+{% load auth_extras %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -35,7 +36,7 @@
                             <i class="fas fa-clipboard-list"></i> Órdenes
                         </a>
                     </li>
-                    {% if user.is_authenticated and user.is_superuser or user.groups.filter(name="Encargado").exists or user.groups.filter(name="Recepcionista").exists %}
+                    {% if user.is_authenticated and not user|has_group:"Mecánico" %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'gestion:asignar_trabajo' %}">
                                 <i class="fas fa-tasks"></i> Asignar Trabajos
