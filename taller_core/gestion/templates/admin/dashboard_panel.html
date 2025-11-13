@@ -1,91 +1,193 @@
-{# Este es el HTML para los 3 dashboards #}
+{# taller_core/gestion/templates/admin/dashboard_panel.html #}
+{% load wagtailcore_tags %}
 
-{# --------------------------------------------- #}
-{# --- DASHBOARD DEL ENCARGADO / SUPERADMIN --- #}
-{# --------------------------------------------- #}
-{% if ordenes_activas %}
-    <div class="card card-flush">
-        <div class="card-header">
-            <h3 class="card-title">Resumen de Órdenes Activas (Taller)</h3>
-        </div>
-        <div class="card-body">
-            <table class="listing listing-full-width">
+<section class="panel dashboard-panel">
+    <div class="panel-header">
+        <h2 class="panel-title icon icon-clipboard-list">
+            {% if user_role %}
+                Dashboard - {{ user_role }}
+            {% else %}
+                Dashboard del Taller
+            {% endif %}
+        </h2>
+    </div>
+
+    <div class="panel-content">
+        {# ALERTAS ACTIVAS - Para todos los usuarios #}
+        {% if alertas_activas %}
+            <div class="alertas-section" style="background: #fff3cd; padding: 15px; margin-bottom: 20px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                <h3 style="margin-top: 0; color: #856404;">
+                    <span class="icon icon-warning"></span> Alertas Activas ({{ alertas_activas.count }})
+                </h3>
+                <ul style="margin: 0; padding-left: 20px;">
+                    {% for alerta in alertas_activas %}
+                        <li style="margin-bottom: 8px;">
+                            <strong>{{ alerta.get_tipo_display }}:</strong> {{ alerta.mensaje }}
+                            {% if alerta.orden %}
+                                - <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:edit' alerta.orden.id %}">Orden #{{ alerta.orden.id }}</a>
+                            {% endif %}
+                            <small style="color: #666;">({{ alerta.fecha_creacion|date:"d/m/Y H:i" }})</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {# VISTA PARA ENCARGADO/SUPERUSUARIO #}
+        {% if ordenes_activas %}
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div class="stat-card" style="background: #e3f2fd; padding: 15px; border-radius: 5px; text-align: center;">
+                    <h4 style="margin: 0; color: #1976d2;">{{ stats.total_activas }}</h4>
+                    <p style="margin: 5px 0 0; color: #555;">Órdenes Activas</p>
+                </div>
+                <div class="stat-card" style="background: #fff3e0; padding: 15px; border-radius: 5px; text-align: center;">
+                    <h4 style="margin: 0; color: #f57c00;">{{ stats.en_reparacion }}</h4>
+                    <p style="margin: 5px 0 0; color: #555;">En Reparación</p>
+                </div>
+                <div class="stat-card" style="background: #e8f5e9; padding: 15px; border-radius: 5px; text-align: center;">
+                    <h4 style="margin: 0; color: #388e3c;">{{ stats.listas }}</h4>
+                    <p style="margin: 5px 0 0; color: #555;">Listas para Entrega</p>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px;">Órdenes de Trabajo Activas</h3>
+            <table class="listing" style="width: 100%;">
                 <thead>
                     <tr>
-                        <th>Orden #</th>
+                        <th>ID</th>
                         <th>Vehículo</th>
-                        <th>Mecánico</th>
+                        <th>Cliente</th>
                         <th>Estado</th>
-                        <th>Acción</th>
+                        <th>Mecánico</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for orden in ordenes_activas %}
-                        <tr>
-                            <td>{{ orden.id }}</td>
-                            <td>{{ orden.vehiculo }}</td>
-                            <td>{{ orden.mecanico_asignado|default:"Sin asignar" }}</td>
-                            <td><span class="status-tag status-tag--primary">{{ orden.get_estado_display }}</span></td>
-                            <td><a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="button button-small">Gestionar</a></td>
+                        <tr class="{% cycle 'odd' 'even' %}">
+                            <td><strong>#{{ orden.id }}</strong></td>
+                            <td>{{ orden.vehiculo.patente }} - {{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</td>
+                            <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
+                            <td>
+                                {% if orden.estado == 'recepcionado' %}
+                                <span class="status-badge status-{{ orden.estado }}" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #e3f2fd; color: #1976d2;">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                                {% elif orden.estado == 'en_reparacion' %}
+                                <span class="status-badge status-{{ orden.estado }}" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #fff3e0; color: #f57c00;">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                                {% elif orden.estado == 'listo_entrega' %}
+                                <span class="status-badge status-{{ orden.estado }}" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #e8f5e9; color: #388e3c;">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                                {% else %}
+                                <span class="status-badge status-{{ orden.estado }}" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #f5f5f5; color: #666;">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ orden.mecanico_asignado.nombre|default:"Sin asignar" }}</td>
+                            <td>{{ orden.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:edit' orden.id %}" class="button button-small button-secondary">Ver/Editar</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-    </div>
+        {% endif %}
 
-{# --------------------------------------------- #}
-{# --- DASHBOARD DEL MECÁNICO --- #}
-{# --------------------------------------------- #}
-{% elif ordenes_asignadas %}
-    <div class="card card-flush">
-        <div class="card-header">
-            <h3 class="card-title">Mis Órdenes de Trabajo Asignadas (Activas)</h3>
-        </div>
-        <div class="card-body">
-            <table class="listing listing-full-width">
+        {# VISTA PARA MECÁNICO #}
+        {% if ordenes_asignadas %}
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div class="stat-card" style="background: #e3f2fd; padding: 15px; border-radius: 5px; text-align: center;">
+                    <h4 style="margin: 0; color: #1976d2;">{{ stats.asignadas }}</h4>
+                    <p style="margin: 5px 0 0; color: #555;">Órdenes Asignadas</p>
+                </div>
+                <div class="stat-card" style="background: #fff3e0; padding: 15px; border-radius: 5px; text-align: center;">
+                    <h4 style="margin: 0; color: #f57c00;">{{ stats.en_curso }}</h4>
+                    <p style="margin: 5px 0 0; color: #555;">En Curso</p>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px;">Mis Órdenes de Trabajo</h3>
+            <table class="listing" style="width: 100%;">
                 <thead>
                     <tr>
-                        <th>Orden #</th>
+                        <th>ID</th>
                         <th>Vehículo</th>
-                        <th>Problema</th>
+                        <th>Cliente</th>
                         <th>Estado</th>
-                        <th>Acción</th>
+                        <th>Prioridad</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for orden in ordenes_asignadas %}
-                        <tr>
-                            <td>{{ orden.id }}</td>
-                            <td>{{ orden.vehiculo }}</td>
-                            <td>{{ orden.descripcion_problema|truncatewords:10 }}</td>
-                            <td><span class="status-tag status-tag--primary">{{ orden.get_estado_display }}</span></td>
-                            <td><a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="button button-small">Ver / Registrar Bitácora</a></td>
+                        <tr class="{% cycle 'odd' 'even' %}">
+                            <td><strong>#{{ orden.id }}</strong></td>
+                            <td>{{ orden.vehiculo.patente }}<br><small>{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small></td>
+                            <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
+                            <td>
+                                {% if orden.estado == 'en_reparacion' %}
+                                <span class="status-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #fff3e0; color: #f57c00;">
+                                {% else %}
+                                <span class="status-badge" style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #f5f5f5; color: #666;">
+                                {% endif %}
+                                    {{ orden.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if orden.prioridad == 'alta' %}
+                                <span style="color: #d32f2f;">
+                                {% elif orden.prioridad == 'media' %}
+                                <span style="color: #f57c00;">
+                                {% else %}
+                                <span style="color: #666;">
+                                {% endif %}
+                                    {{ orden.get_prioridad_display }}
+                                </span>
+                            </td>
+                            <td>{{ orden.fecha_ingreso|date:"d/m/Y" }}</td>
+                            <td>
+                                <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:edit' orden.id %}" class="button button-small button-secondary">Ver/Editar</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-    </div>
+        {% endif %}
 
-{# --------------------------------------------- #}
-{# --- DASHBOARD DEL RECEPCIONISTA --- #}
-{# --------------------------------------------- #}
-{% elif is_recepcionista %}
-    <div class="card card-flush">
-        <div class="card-header">
-            <h3 class="card-title">Acciones Rápidas (Recepcionista)</h3>
-        </div>
-        <div class="card-body">
-            <p>Bienvenido. Usa estos accesos para gestionar ingresos:</p>
-            <a href="/admin/snippets/gestion/ordentrabajo/add/" class="button button-primary">
-                <span class="icon icon-plus"></span>
-                Crear Nueva Orden de Trabajo
-            </a>
-            <a href="/admin/snippets/gestion/cliente/add/" class="button">
-                <span class="icon icon-user"></span>
-                Añadir Nuevo Cliente
-            </a>
+        {# VISTA PARA RECEPCIONISTA #}
+        {% if is_recepcionista %}
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 5px; text-align: center;">
+                <h3 style="margin-top: 0; color: #388e3c;">Panel de Recepcionista</h3>
+                <p>Accede a las órdenes desde el menú lateral</p>
+                <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:list' %}" class="button button-primary">Ver Todas las Órdenes</a>
+                <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:add' %}" class="button">Nueva Orden</a>
+            </div>
+        {% endif %}
+
+        {# ACCESOS RÁPIDOS #}
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+            <h3>Accesos Rápidos</h3>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <a href="{% url 'wagtailsnippets_gestion_ordentrabajo:add' %}" class="button button-secondary" style="text-align: center;">
+                    <span class="icon icon-plus"></span> Nueva Orden
+                </a>
+                <a href="{% url 'wagtailsnippets_gestion_cliente:list' %}" class="button button-secondary" style="text-align: center;">
+                    <span class="icon icon-user"></span> Clientes
+                </a>
+                <a href="{% url 'wagtailsnippets_gestion_repuesto:list' %}" class="button button-secondary" style="text-align: center;">
+                    <span class="icon icon-archive"></span> Inventario
+                </a>
+                <a href="{% url 'wagtailsnippets_gestion_alerta:list' %}" class="button button-secondary" style="text-align: center;">
+                    <span class="icon icon-warning"></span> Alertas
+                </a>
+            </div>
         </div>
     </div>
-{% endif %}
+</section>
