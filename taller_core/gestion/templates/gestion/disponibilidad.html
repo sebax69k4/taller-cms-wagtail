@@ -1,0 +1,151 @@
+{# taller_core/gestion/templates/gestion/orden_list.html #}
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Lista de Órdenes - Taller{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="bg-light py-2">
+    <div class="container">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'gestion:dashboard' %}">Inicio</a></li>
+            <li class="breadcrumb-item active">Órdenes de Trabajo</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-clipboard-list"></i> Órdenes de Trabajo</h1>
+    </div>
+    <div class="col text-end">
+        <a href="/admin/snippets/gestion/ordentrabajo/add/" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nueva Orden
+        </a>
+    </div>
+</div>
+
+{# Filtros #}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="estado" class="form-label">Estado</label>
+                <select name="estado" id="estado" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="recepcionado" {% if request.GET.estado == 'recepcionado' %}selected{% endif %}>Recepcionado</option>
+                    <option value="diagnostico" {% if request.GET.estado == 'diagnostico' %}selected{% endif %}>En Diagnóstico</option>
+                    <option value="espera_repuesto" {% if request.GET.estado == 'espera_repuesto' %}selected{% endif %}>Espera Repuesto</option>
+                    <option value="en_reparacion" {% if request.GET.estado == 'en_reparacion' %}selected{% endif %}>En Reparación</option>
+                    <option value="listo_entrega" {% if request.GET.estado == 'listo_entrega' %}selected{% endif %}>Listo Entrega</option>
+                    <option value="entregado" {% if request.GET.estado == 'entregado' %}selected{% endif %}>Entregado</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="buscar" class="form-label">Buscar (Patente/Cliente)</label>
+                <input type="text" name="buscar" id="buscar" class="form-control" value="{{ request.GET.buscar }}" placeholder="Ej: ABC123">
+            </div>
+            <div class="col-md-3">
+                <label for="prioridad" class="form-label">Prioridad</label>
+                <select name="prioridad" id="prioridad" class="form-select">
+                    <option value="">Todas</option>
+                    <option value="alta" {% if request.GET.prioridad == 'alta' %}selected{% endif %}>Alta</option>
+                    <option value="media" {% if request.GET.prioridad == 'media' %}selected{% endif %}>Media</option>
+                    <option value="baja" {% if request.GET.prioridad == 'baja' %}selected{% endif %}>Baja</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary me-2"><i class="fas fa-search"></i> Filtrar</button>
+                <a href="{% url 'gestion:orden_list' %}" class="btn btn-outline-secondary">Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# Tabla de Órdenes #}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vehículo</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>Mecánico</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes %}
+                    <tr>
+                        <td><strong>#{{ orden.id }}</strong></td>
+                        <td>
+                            <strong>{{ orden.vehiculo.patente }}</strong><br>
+                            <small class="text-muted">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
+                        </td>
+                        <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if orden.estado == 'recepcionado' %}bg-info
+                                {% elif orden.estado == 'diagnostico' %}bg-primary
+                                {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
+                                {% elif orden.estado == 'listo_entrega' %}bg-success
+                                {% elif orden.estado == 'entregado' %}bg-secondary
+                                {% else %}bg-light text-dark{% endif %}">
+                                {{ orden.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if orden.prioridad == 'alta' %}bg-danger
+                                {% elif orden.prioridad == 'media' %}bg-warning text-dark
+                                {% else %}bg-secondary{% endif %}">
+                                {{ orden.get_prioridad_display }}
+                            </span>
+                        </td>
+                        <td>{{ orden.mecanico_asignado.nombre|default:"Sin asignar" }}</td>
+                        <td>{{ orden.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                            No hay órdenes de trabajo
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Paginación (si la implementas) #}
+{% if is_paginated %}
+<nav aria-label="Paginación" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
