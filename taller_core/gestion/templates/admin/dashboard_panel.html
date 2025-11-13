@@ -1,0 +1,91 @@
+{# Este es el HTML para los 3 dashboards #}
+
+{# --------------------------------------------- #}
+{# --- DASHBOARD DEL ENCARGADO / SUPERADMIN --- #}
+{# --------------------------------------------- #}
+{% if ordenes_activas %}
+    <div class="card card-flush">
+        <div class="card-header">
+            <h3 class="card-title">Resumen de Órdenes Activas (Taller)</h3>
+        </div>
+        <div class="card-body">
+            <table class="listing listing-full-width">
+                <thead>
+                    <tr>
+                        <th>Orden #</th>
+                        <th>Vehículo</th>
+                        <th>Mecánico</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes_activas %}
+                        <tr>
+                            <td>{{ orden.id }}</td>
+                            <td>{{ orden.vehiculo }}</td>
+                            <td>{{ orden.mecanico_asignado|default:"Sin asignar" }}</td>
+                            <td><span class="status-tag status-tag--primary">{{ orden.get_estado_display }}</span></td>
+                            <td><a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="button button-small">Gestionar</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{# --------------------------------------------- #}
+{# --- DASHBOARD DEL MECÁNICO --- #}
+{# --------------------------------------------- #}
+{% elif ordenes_asignadas %}
+    <div class="card card-flush">
+        <div class="card-header">
+            <h3 class="card-title">Mis Órdenes de Trabajo Asignadas (Activas)</h3>
+        </div>
+        <div class="card-body">
+            <table class="listing listing-full-width">
+                <thead>
+                    <tr>
+                        <th>Orden #</th>
+                        <th>Vehículo</th>
+                        <th>Problema</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orden in ordenes_asignadas %}
+                        <tr>
+                            <td>{{ orden.id }}</td>
+                            <td>{{ orden.vehiculo }}</td>
+                            <td>{{ orden.descripcion_problema|truncatewords:10 }}</td>
+                            <td><span class="status-tag status-tag--primary">{{ orden.get_estado_display }}</span></td>
+                            <td><a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="button button-small">Ver / Registrar Bitácora</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{# --------------------------------------------- #}
+{# --- DASHBOARD DEL RECEPCIONISTA --- #}
+{# --------------------------------------------- #}
+{% elif is_recepcionista %}
+    <div class="card card-flush">
+        <div class="card-header">
+            <h3 class="card-title">Acciones Rápidas (Recepcionista)</h3>
+        </div>
+        <div class="card-body">
+            <p>Bienvenido. Usa estos accesos para gestionar ingresos:</p>
+            <a href="/admin/snippets/gestion/ordentrabajo/add/" class="button button-primary">
+                <span class="icon icon-plus"></span>
+                Crear Nueva Orden de Trabajo
+            </a>
+            <a href="/admin/snippets/gestion/cliente/add/" class="button">
+                <span class="icon icon-user"></span>
+                Añadir Nuevo Cliente
+            </a>
+        </div>
+    </div>
+{% endif %}
