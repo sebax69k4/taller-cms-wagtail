@@ -113,9 +113,7 @@ class BitacoraSnippetViewSet(SnippetViewSet):
     search_fields = ("orden__id", "mecanico__nombre", "procedimientos", "observaciones")
     list_filter = ("mecanico", "fecha")
     
-    def procedimientos_cortos(self, obj):
-        return obj.procedimientos[:50] + "..." if len(obj.procedimientos) > 50 else obj.procedimientos
-    procedimientos_cortos.short_description = "Procedimientos"
+    # La lógica ahora está en el modelo como una propiedad.
 
 
 class PresupuestoSnippetViewSet(SnippetViewSet):

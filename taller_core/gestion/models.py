@@ -220,14 +220,13 @@ class Bitacora(ClusterableModel):
     orden = ParentalKey(OrdenTrabajo, on_delete=models.PROTECT, related_name='bitacoras')
 
     # Quién hizo el trabajo
-    mecanico = models.ForeignKey(Mecanico, on_delete=models.PROTECT, related_name='bitacoras')
+    mecanico = models.ForeignKey(Mecanico, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Mecánico Asignado")
 
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
     procedimientos = models.TextField(verbose_name="Procedimientos Realizados")
-    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+    observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones Adicionales")
 
     panels = [
-        FieldPanel('orden'),
         FieldPanel('mecanico'),
         FieldPanel('procedimientos'),
         FieldPanel('observaciones'),
@@ -237,8 +236,15 @@ class Bitacora(ClusterableModel):
         InlinePanel('repuestos_usados', label="Repuestos Utilizados"),
     ]
 
+    @property
+    def procedimientos_cortos(self):
+        """Devuelve una versión corta de los procedimientos para vistas de lista."""
+        if self.procedimientos and len(self.procedimientos) > 50:
+            return self.procedimientos[:50] + "..."
+        return self.procedimientos
+
     def __str__(self):
-        return f"Bitácora para Orden #{self.orden.id} (Por {self.mecanico.nombre})"
+        return f"Bitácora para Orden #{self.orden.id} - {self.fecha.strftime('%d/%m/%Y')}"
 
     class Meta:
         verbose_name = "Bitácora de Trabajo"
