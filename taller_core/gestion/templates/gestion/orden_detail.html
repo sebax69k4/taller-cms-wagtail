@@ -1,0 +1,156 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Orden #{{ orden.id }} - Detalle{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="bg-light py-2">
+    <div class="container">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'gestion:dashboard' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'gestion:orden_list' %}">Órdenes</a></li>
+            <li class="breadcrumb-item active">Orden #{{ orden.id }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="fas fa-clipboard-list"></i> Orden #{{ orden.id }}</h1>
+        <p class="text-muted"><i class="fas fa-calendar"></i> {{ orden.fecha_ingreso|date:"d/m/Y H:i" }}</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <span class="badge 
+            {% if orden.estado == 'recepcionado' %}bg-info
+            {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
+            {% elif orden.estado == 'listo_entrega' %}bg-success
+            {% else %}bg-secondary{% endif %}" 
+            style="font-size: 1.2rem; padding: 10px 20px;">
+            {{ orden.get_estado_display }}
+        </span>
+    </div>
+</div>
+
+{# Información del Vehículo #}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-car"></i> Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Patente:</th>
+                        <td><strong>{{ orden.vehiculo.patente }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Marca:</th>
+                        <td>{{ orden.vehiculo.marca }}</td>
+                    </tr>
+                    <tr>
+                        <th>Modelo:</th>
+                        <td>{{ orden.vehiculo.modelo }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Cliente</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Nombre:</th>
+                        <td><strong>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Teléfono:</th>
+                        <td>{{ orden.cliente.telefono }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ orden.cliente.email|default:"No especificado" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Bitácoras #}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="fas fa-book"></i> Bitácoras ({{ bitacoras.count }})</h5>
+    </div>
+    <div class="card-body">
+        {% if bitacoras %}
+            {% for bitacora in bitacoras %}
+            <div class="card mb-3 border-start border-5 border-warning">
+                <div class="card-body">
+                    <h6><strong>{{ bitacora.mecanico.nombre }}</strong> - {{ bitacora.fecha|date:"d/m/Y" }}</h6>
+                    <p>{{ bitacora.procedimientos }}</p>
+                    {% if bitacora.observaciones %}
+                    <p class="text-muted">{{ bitacora.observaciones }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-muted">No hay bitácoras registradas</p>
+        {% endif %}
+    </div>
+</div>
+
+{# Presupuestos #}
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> Presupuestos ({{ presupuestos.count }})</h5>
+    </div>
+    <div class="card-body">
+        {% if presupuestos %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Mano de Obra</th>
+                    <th>Repuestos</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in presupuestos %}
+                <tr>
+                    <td>{{ p.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>${{ p.costo_mano_obra }}</td>
+                    <td>${{ p.costo_repuestos }}</td>
+                    <td><strong>${{ p.total }}</strong></td>
+                    <td>
+                        <span class="badge bg-{{ p.estado|yesno:'success,warning,danger' }}">
+                            {{ p.get_estado_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p class="text-center text-muted">No hay presupuestos</p>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left"></i> Volver
+</a>
+<a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary">
+    <i class="fas fa-edit"></i> Editar
+</a>
+{% endblock %}
