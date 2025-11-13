@@ -134,8 +134,9 @@ STATICFILES_FINDERS = [
 ]
 
 STATICFILES_DIRS = [
-    BASE_DIR / "gestion" / "static",  
+    os.path.join(BASE_DIR, "gestion", "static"),
 ]
+
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 STATIC_URL = "/static/"

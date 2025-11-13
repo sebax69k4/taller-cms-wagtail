@@ -15,6 +15,14 @@ from .models import (
 # UC-001: REGISTRAR CLIENTE (Recepcionista)
 # ============================================
 @login_required
+def lista_clientes(request):
+    """Vista para listar clientes"""
+    clientes = Cliente.objects.all().order_by('-fecha_registro')
+    context = {'clientes': clientes}
+    return render(request, 'gestion/lista_clientes.html', context)
+
+
+@login_required
 def registrar_cliente(request):
     """Vista simplificada para que el recepcionista registre clientes"""
     if request.method == 'POST':
@@ -28,6 +36,14 @@ def registrar_cliente(request):
 # ============================================
 # UC-002: REGISTRAR VEHÍCULO (Recepcionista)
 # ============================================
+@login_required
+def lista_vehiculos(request):
+    """Vista para listar vehículos"""
+    vehiculos = Vehiculo.objects.select_related('cliente').all()
+    context = {'vehiculos': vehiculos}
+    return render(request, 'gestion/lista_vehiculos.html', context)
+
+
 @login_required
 def registrar_vehiculo(request):
     """Vista para que el recepcionista registre vehículos"""
@@ -314,3 +330,14 @@ def actualizar_estado_orden(request, pk):
         return JsonResponse({'success': False, 'error': 'Estado inválido'})
     
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+
+# ============================================
+# UC-007: GENERAR FACTURA (Pendiente)
+# ============================================
+@login_required
+def generar_factura(request, pk):
+    """Vista placeholder para generar factura - UC-007"""
+    orden = get_object_or_404(OrdenTrabajo, pk=pk)
+    messages.info(request, 'Función de facturación en desarrollo')
+    return redirect('gestion:orden_detail', pk=pk)
