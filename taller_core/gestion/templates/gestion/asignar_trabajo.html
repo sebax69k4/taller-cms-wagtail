@@ -1,0 +1,218 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Asignar Trabajos - UC-004{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="bg-light py-2">
+    <div class="container">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'gestion:dashboard' %}">Inicio</a></li>
+            <li class="breadcrumb-item active">Asignar Trabajos</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-tasks"></i> Asignar Trabajos (HU002)</h1>
+        <p class="text-muted">UC-004: Asignar Técnico a Orden de Trabajo</p>
+    </div>
+    <div class="col text-end">
+        <a href="{% url 'gestion:disponibilidad' %}" class="btn btn-info">
+            <i class="fas fa-calendar-check"></i> Ver Disponibilidad
+        </a>
+    </div>
+</div>
+
+{# Órdenes Sin Asignar #}
+<div class="row mb-4">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Órdenes Sin Asignar ({{ ordenes_sin_asignar.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if ordenes_sin_asignar %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Vehículo</th>
+                                <th>Cliente</th>
+                                <th>Problema</th>
+                                <th>Prioridad</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for orden in ordenes_sin_asignar %}
+                            <tr>
+                                <td><strong>#{{ orden.id }}</strong></td>
+                                <td>
+                                    <strong>{{ orden.vehiculo.patente }}</strong><br>
+                                    <small class="text-muted">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
+                                </td>
+                                <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
+                                <td><small>{{ orden.descripcion_problema|truncatewords:10 }}</small></td>
+                                <td>
+                                    <span class="badge 
+                                        {% if orden.prioridad == 'alta' %}bg-danger
+                                        {% elif orden.prioridad == 'media' %}bg-warning text-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ orden.get_prioridad_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAsignar" 
+                                        data-orden-id="{{ orden.id }}"
+                                        data-orden-patente="{{ orden.vehiculo.patente }}"
+                                        data-orden-problema="{{ orden.descripcion_problema }}">
+                                        <i class="fas fa-user-plus"></i> Asignar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <p class="text-muted">No hay órdenes pendientes de asignación</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Panel de Mecánicos Disponibles #}
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Mecánicos Disponibles</h5>
+            </div>
+            <div class="card-body">
+                {% for mecanico in mecanicos %}
+                <div class="card mb-2 border-{{ mecanico.ordenes_activas|yesno:'warning,success' }}">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ mecanico.nombre }}</strong><br>
+                                <small class="text-muted">{{ mecanico.especialidad }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if mecanico.ordenes_activas > 3 %}bg-danger{% elif mecanico.ordenes_activas > 1 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                    {{ mecanico.ordenes_activas }} órdenes
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-phone"></i> {{ mecanico.telefono }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-muted">No hay mecánicos disponibles</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# Zonas de Trabajo #}
+        <div class="card mt-3">
+            <div class="card-header bg-dark text-white">
+                <h6 class="mb-0"><i class="fas fa-map-marker-alt"></i> Zonas de Trabajo</h6>
+            </div>
+            <div class="card-body">
+                {% for zona in zonas %}
+                <div class="mb-2">
+                    <strong>{{ zona.nombre }}</strong>
+                    <span class="badge bg-secondary float-end">Disponible</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modal de Asignación #}
+<div class="modal fade" id="modalAsignar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-user-plus"></i> Asignar Mecánico y Zona</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="orden_id" id="orden_id">
+                    
+                    <div class="alert alert-info">
+                        <strong>Orden #<span id="modal_orden_id"></span></strong><br>
+                        <strong>Patente:</strong> <span id="modal_patente"></span><br>
+                        <small id="modal_problema"></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mecanico_id" class="form-label">Mecánico Responsable *</label>
+                        <select name="mecanico_id" id="mecanico_id" class="form-select" required>
+                            <option value="">-- Seleccionar Mecánico --</option>
+                            {% for mecanico in mecanicos %}
+                            <option value="{{ mecanico.id }}">
+                                {{ mecanico.nombre }} - {{ mecanico.especialidad }} ({{ mecanico.ordenes_activas }} órdenes activas)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="zona_id" class="form-label">Zona de Trabajo</label>
+                        <select name="zona_id" id="zona_id" class="form-select">
+                            <option value="">-- Sin Zona Específica --</option>
+                            {% for zona in zonas %}
+                            <option value="{{ zona.id }}">{{ zona.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <small><i class="fas fa-info-circle"></i> Al asignar, el estado cambiará automáticamente a "En Diagnóstico"</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Asignar Ahora
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pasar datos al modal cuando se hace clic en "Asignar"
+document.addEventListener('DOMContentLoaded', function() {
+    var modalAsignar = document.getElementById('modalAsignar');
+    modalAsignar.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var ordenId = button.getAttribute('data-orden-id');
+        var patente = button.getAttribute('data-orden-patente');
+        var problema = button.getAttribute('data-orden-problema');
+        
+        document.getElementById('orden_id').value = ordenId;
+        document.getElementById('modal_orden_id').textContent = ordenId;
+        document.getElementById('modal_patente').textContent = patente;
+        document.getElementById('modal_problema').textContent = problema;
+    });
+});
+</script>
+{% endblock %}

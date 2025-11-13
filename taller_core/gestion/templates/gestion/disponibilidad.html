@@ -1,15 +1,14 @@
-{# taller_core/gestion/templates/gestion/orden_list.html #}
 {% extends "gestion/base.html" %}
 {% load static %}
 
-{% block title %}Lista de Órdenes - Taller{% endblock %}
+{% block title %}Disponibilidad - HU002{% endblock %}
 
 {% block breadcrumb %}
 <nav aria-label="breadcrumb" class="bg-light py-2">
     <div class="container">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{% url 'gestion:dashboard' %}">Inicio</a></li>
-            <li class="breadcrumb-item active">Órdenes de Trabajo</li>
+            <li class="breadcrumb-item active">Disponibilidad</li>
         </ol>
     </div>
 </nav>
@@ -18,134 +17,222 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h1><i class="fas fa-clipboard-list"></i> Órdenes de Trabajo</h1>
-    </div>
-    <div class="col text-end">
-        <a href="/admin/snippets/gestion/ordentrabajo/add/" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Nueva Orden
-        </a>
+        <h1><i class="fas fa-calendar-check"></i> Disponibilidad de Recursos</h1>
+        <p class="text-muted">HU002: Ver disponibilidad de mecánicos y zonas de trabajo</p>
     </div>
 </div>
 
-{# Filtros #}
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label for="estado" class="form-label">Estado</label>
-                <select name="estado" id="estado" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="recepcionado" {% if request.GET.estado == 'recepcionado' %}selected{% endif %}>Recepcionado</option>
-                    <option value="diagnostico" {% if request.GET.estado == 'diagnostico' %}selected{% endif %}>En Diagnóstico</option>
-                    <option value="espera_repuesto" {% if request.GET.estado == 'espera_repuesto' %}selected{% endif %}>Espera Repuesto</option>
-                    <option value="en_reparacion" {% if request.GET.estado == 'en_reparacion' %}selected{% endif %}>En Reparación</option>
-                    <option value="listo_entrega" {% if request.GET.estado == 'listo_entrega' %}selected{% endif %}>Listo Entrega</option>
-                    <option value="entregado" {% if request.GET.estado == 'entregado' %}selected{% endif %}>Entregado</option>
-                </select>
+{# Disponibilidad de Mecánicos #}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Disponibilidad de Mecánicos</h5>
             </div>
-            <div class="col-md-3">
-                <label for="buscar" class="form-label">Buscar (Patente/Cliente)</label>
-                <input type="text" name="buscar" id="buscar" class="form-control" value="{{ request.GET.buscar }}" placeholder="Ej: ABC123">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mecánico</th>
+                                <th>Especialidad</th>
+                                <th>Estado</th>
+                                <th class="text-center">Órdenes Activas</th>
+                                <th class="text-center">En Diagnóstico</th>
+                                <th class="text-center">En Reparación</th>
+                                <th>Carga de Trabajo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mecanico in mecanicos %}
+                            <tr>
+                                <td><strong>{{ mecanico.nombre }}</strong></td>
+                                <td>{{ mecanico.especialidad }}</td>
+                                <td>
+                                    {% if mecanico.disponible %}
+                                        <span class="badge bg-success"><i class="fas fa-check-circle"></i> Disponible</span>
+                                    {% else %}
+                                        <span class="badge bg-danger"><i class="fas fa-times-circle"></i> No Disponible</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary fs-6">{{ mecanico.ordenes_activas }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ mecanico.ordenes_en_diagnostico }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark">{{ mecanico.ordenes_en_reparacion }}</span>
+                                </td>
+                                <td>
+                                    {% if mecanico.ordenes_activas > 0 %}
+                                        {% if mecanico.ordenes_activas <= 2 %}
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar bg-success" style="width: {{ mecanico.ordenes_activas }}0%">
+                                                    Baja
+                                                </div>
+                                            </div>
+                                        {% elif mecanico.ordenes_activas <= 4 %}
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar bg-warning" style="width: {{ mecanico.ordenes_activas }}0%">
+                                                    Media
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar bg-danger" style="width: 100%">
+                                                    Alta
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar bg-secondary" style="width: 10%">
+                                                Sin carga
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3">
+                                    <i class="fas fa-users-slash fa-2x mb-2"></i>
+                                    <p>No hay mecánicos registrados</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="col-md-3">
-                <label for="prioridad" class="form-label">Prioridad</label>
-                <select name="prioridad" id="prioridad" class="form-select">
-                    <option value="">Todas</option>
-                    <option value="alta" {% if request.GET.prioridad == 'alta' %}selected{% endif %}>Alta</option>
-                    <option value="media" {% if request.GET.prioridad == 'media' %}selected{% endif %}>Media</option>
-                    <option value="baja" {% if request.GET.prioridad == 'baja' %}selected{% endif %}>Baja</option>
-                </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-secondary me-2"><i class="fas fa-search"></i> Filtrar</button>
-                <a href="{% url 'gestion:orden_list' %}" class="btn btn-outline-secondary">Limpiar</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-{# Tabla de Órdenes #}
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Vehículo</th>
-                        <th>Cliente</th>
-                        <th>Estado</th>
-                        <th>Prioridad</th>
-                        <th>Mecánico</th>
-                        <th>Fecha Ingreso</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for orden in ordenes %}
-                    <tr>
-                        <td><strong>#{{ orden.id }}</strong></td>
-                        <td>
-                            <strong>{{ orden.vehiculo.patente }}</strong><br>
-                            <small class="text-muted">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
-                        </td>
-                        <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if orden.estado == 'recepcionado' %}bg-info
-                                {% elif orden.estado == 'diagnostico' %}bg-primary
-                                {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
-                                {% elif orden.estado == 'listo_entrega' %}bg-success
-                                {% elif orden.estado == 'entregado' %}bg-secondary
-                                {% else %}bg-light text-dark{% endif %}">
-                                {{ orden.get_estado_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge 
-                                {% if orden.prioridad == 'alta' %}bg-danger
-                                {% elif orden.prioridad == 'media' %}bg-warning text-dark
-                                {% else %}bg-secondary{% endif %}">
-                                {{ orden.get_prioridad_display }}
-                            </span>
-                        </td>
-                        <td>{{ orden.mecanico_asignado.nombre|default:"Sin asignar" }}</td>
-                        <td>{{ orden.fecha_ingreso|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
-                            No hay órdenes de trabajo
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
         </div>
     </div>
 </div>
 
-{# Paginación (si la implementas) #}
-{% if is_paginated %}
-<nav aria-label="Paginación" class="mt-4">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
-        {% endif %}
-        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
-        {% if page_obj.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+{# Disponibilidad de Zonas y Timeline #}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Zonas de Trabajo</h5>
+            </div>
+            <div class="card-body">
+                {% for zona in zonas %}
+                <div class="card mb-3 {% if zona.ordenes_activas > 0 %}border-warning{% else %}border-success{% endif %}">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-8">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-warehouse"></i> {{ zona.nombre }}
+                                </h6>
+                                <small class="text-muted">{{ zona.descripcion|default:"Sin descripción" }}</small>
+                            </div>
+                            <div class="col-4 text-end">
+                                <h3 class="mb-0 {% if zona.ordenes_activas > 0 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ zona.ordenes_activas }}
+                                </h3>
+                                <small class="text-muted">órdenes</small>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            {% if zona.ordenes_activas > 0 %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-tools"></i> En uso
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check"></i> Disponible
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-map-marker-slash fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay zonas de trabajo configuradas</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Timeline de Órdenes en Proceso #}
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Órdenes en Proceso</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% for orden in ordenes_timeline %}
+                <div class="card mb-2 border-start border-4 
+                    {% if orden.estado == 'diagnostico' %}border-primary
+                    {% elif orden.estado == 'en_reparacion' %}border-warning
+                    {% else %}border-secondary{% endif %}">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">
+                                    <strong>Orden #{{ orden.id }}</strong> - {{ orden.vehiculo.patente }}
+                                </h6>
+                                <p class="mb-1 text-muted small">
+                                    <i class="fas fa-user-cog"></i> {{ orden.mecanico_asignado.nombre|default:"Sin asignar" }}
+                                </p>
+                                {% if orden.zona_trabajo %}
+                                <p class="mb-0 text-muted small">
+                                    <i class="fas fa-map-marker-alt"></i> {{ orden.zona_trabajo.nombre }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <span class="badge 
+                                    {% if orden.estado == 'diagnostico' %}bg-primary
+                                    {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                                {% if orden.fecha_estimada %}
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar-alt"></i> {{ orden.fecha_estimada|date:"d/m" }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay órdenes en proceso</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Acciones Rápidas #}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Acciones Rápidas</h6>
+                    </div>
+                    <div>
+                        <a href="{% url 'gestion:asignar_trabajo' %}" class="btn btn-primary">
+                            <i class="fas fa-tasks"></i> Asignar Trabajos
+                        </a>
+                        <a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-list"></i> Ver Todas las Órdenes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

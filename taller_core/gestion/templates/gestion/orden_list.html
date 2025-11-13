@@ -1,0 +1,426 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Orden #{{ orden.id }} - Detalle{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb" class="bg-light py-2">
+    <div class="container">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'gestion:dashboard' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'gestion:orden_list' %}">Órdenes</a></li>
+            <li class="breadcrumb-item active">Orden #{{ orden.id }}</li>
+        </ol>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+{# Header con Información Principal #}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>
+            <i class="fas fa-clipboard-list"></i> Orden de Trabajo #{{ orden.id }}
+        </h1>
+        <p class="text-muted mb-0">
+            <i class="fas fa-calendar"></i> Ingresó: {{ orden.fecha_ingreso|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="mb-2">
+            <span class="badge 
+                {% if orden.estado == 'recepcionado' %}bg-info
+                {% elif orden.estado == 'diagnostico' %}bg-primary
+                {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
+                {% elif orden.estado == 'espera_repuesto' %}bg-secondary
+                {% elif orden.estado == 'listo_entrega' %}bg-success
+                {% elif orden.estado == 'entregado' %}bg-dark
+                {% else %}bg-light text-dark{% endif %}" 
+                style="font-size: 1.2rem; padding: 10px 20px;">
+                {{ orden.get_estado_display }}
+            </span>
+        </div>
+        <div>
+            <span class="badge 
+                {% if orden.prioridad == 'alta' %}bg-danger
+                {% elif orden.prioridad == 'media' %}bg-warning text-dark
+                {% else %}bg-secondary{% endif %}">
+                Prioridad: {{ orden.get_prioridad_display }}
+            </span>
+        </div>
+    </div>
+</div>
+
+{# Timeline de Estados #}
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="fas fa-stream"></i> Progreso de la Orden</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            {# Recepcionado #}
+            <div class="col">
+                <div class="mb-2">
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center 
+                        {% if orden.estado == 'recepcionado' or orden.estado == 'diagnostico' or orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" 
+                        style="width: 60px; height: 60px;">
+                        <i class="fas fa-inbox fa-2x"></i>
+                    </div>
+                </div>
+                <h6 class="{% if orden.estado == 'recepcionado' or orden.estado == 'diagnostico' or orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}text-success{% else %}text-muted{% endif %}">
+                    Recepcionado
+                </h6>
+                <small class="text-muted">{{ orden.fecha_ingreso|date:"d/m/Y" }}</small>
+            </div>
+
+            {# En Diagnóstico #}
+            <div class="col">
+                <div class="mb-2">
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center 
+                        {% if orden.estado == 'diagnostico' or orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" 
+                        style="width: 60px; height: 60px;">
+                        <i class="fas fa-search fa-2x"></i>
+                    </div>
+                </div>
+                <h6 class="{% if orden.estado == 'diagnostico' or orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}text-success{% else %}text-muted{% endif %}">
+                    En Diagnóstico
+                </h6>
+            </div>
+
+            {# En Reparación #}
+            <div class="col">
+                <div class="mb-2">
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center 
+                        {% if orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" 
+                        style="width: 60px; height: 60px;">
+                        <i class="fas fa-wrench fa-2x"></i>
+                    </div>
+                </div>
+                <h6 class="{% if orden.estado == 'en_reparacion' or orden.estado == 'espera_repuesto' or orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}text-success{% else %}text-muted{% endif %}">
+                    En Reparación
+                </h6>
+            </div>
+
+            {# Listo Entrega #}
+            <div class="col">
+                <div class="mb-2">
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center 
+                        {% if orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" 
+                        style="width: 60px; height: 60px;">
+                        <i class="fas fa-check fa-2x"></i>
+                    </div>
+                </div>
+                <h6 class="{% if orden.estado == 'listo_entrega' or orden.estado == 'entregado' %}text-success{% else %}text-muted{% endif %}">
+                    Listo Entrega
+                </h6>
+            </div>
+
+            {# Entregado #}
+            <div class="col">
+                <div class="mb-2">
+                    <div class="rounded-circle d-inline-flex justify-content-center align-items-center 
+                        {% if orden.estado == 'entregado' %}bg-success text-white{% else %}bg-light text-muted{% endif %}" 
+                        style="width: 60px; height: 60px;">
+                        <i class="fas fa-handshake fa-2x"></i>
+                    </div>
+                </div>
+                <h6 class="{% if orden.estado == 'entregado' %}text-success{% else %}text-muted{% endif %}">
+                    Entregado
+                </h6>
+                {% if orden.fecha_finalizacion %}
+                <small class="text-muted">{{ orden.fecha_finalizacion|date:"d/m/Y" }}</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Información del Vehículo y Cliente #}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-car"></i> Información del Vehículo</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="40%">Patente:</th>
+                        <td><strong class="text-primary fs-5">{{ orden.vehiculo.patente }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Marca:</th>
+                        <td>{{ orden.vehiculo.marca }}</td>
+                    </tr>
+                    <tr>
+                        <th>Modelo:</th>
+                        <td>{{ orden.vehiculo.modelo }}</td>
+                    </tr>
+                    <tr>
+                        <th>Año:</th>
+                        <td>{{ orden.vehiculo.año }}</td>
+                    </tr>
+                    <tr>
+                        <th>Color:</th>
+                        <td>{{ orden.vehiculo.color|default:"No especificado" }}</td>
+                    </tr>
+                    <tr>
+                        <th>N° Motor:</th>
+                        <td>{{ orden.vehiculo.numero_motor|default:"No especificado" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Información del Cliente</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="40%">Nombre:</th>
+                        <td><strong>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Teléfono:</th>
+                        <td>
+                            <a href="tel:{{ orden.cliente.telefono }}" class="text-decoration-none">
+                                <i class="fas fa-phone text-success"></i> {{ orden.cliente.telefono }}
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>
+                            {% if orden.cliente.email %}
+                                <a href="mailto:{{ orden.cliente.email }}" class="text-decoration-none">
+                                    <i class="fas fa-envelope text-primary"></i> {{ orden.cliente.email }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">No especificado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Dirección:</th>
+                        <td>{{ orden.cliente.direccion|default:"No especificada" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Cliente desde:</th>
+                        <td>{{ orden.cliente.fecha_registro|date:"d/m/Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Información de la Orden #}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Detalles de la Orden</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong><i class="fas fa-user-cog"></i> Mecánico Asignado:</strong>
+                </p>
+                <p class="ms-4">
+                    {% if orden.mecanico_asignado %}
+                        {{ orden.mecanico_asignado.nombre }}
+                        <span class="badge bg-secondary">{{ orden.mecanico_asignado.especialidad }}</span>
+                    {% else %}
+                        <span class="text-muted">Sin asignar</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong><i class="fas fa-map-marker-alt"></i> Zona de Trabajo:</strong>
+                </p>
+                <p class="ms-4">
+                    {% if orden.zona_trabajo %}
+                        {{ orden.zona_trabajo.nombre }}
+                    {% else %}
+                        <span class="text-muted">No asignada</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong><i class="fas fa-clock"></i> Fecha Estimada:</strong>
+                </p>
+                <p class="ms-4">
+                    {% if orden.fecha_estimada %}
+                        {{ orden.fecha_estimada|date:"d/m/Y H:i" }}
+                    {% else %}
+                        <span class="text-muted">Por definir</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-2">
+                    <strong><i class="fas fa-flag-checkered"></i> Fecha Finalización:</strong>
+                </p>
+                <p class="ms-4">
+                    {% if orden.fecha_finalizacion %}
+                        {{ orden.fecha_finalizacion|date:"d/m/Y H:i" }}
+                    {% else %}
+                        <span class="text-muted">Pendiente</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <hr>
+        <p class="mb-2"><strong><i class="fas fa-exclamation-circle"></i> Problema Reportado:</strong></p>
+        <div class="alert alert-light border">
+            {{ orden.descripcion_problema }}
+        </div>
+    </div>
+</div>
+
+{# Bitácoras #}
+<div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="fas fa-book"></i> Bitácoras de Trabajo 
+            <span class="badge bg-dark">{{ bitacoras.count }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if bitacoras %}
+            {% for bitacora in bitacoras %}
+            <div class="card mb-3 border-start border-5 border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-user-cog text-warning"></i> 
+                            <strong>{{ bitacora.mecanico.nombre }}</strong>
+                        </h6>
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-calendar"></i> {{ bitacora.fecha|date:"d/m/Y" }}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2"><i class="fas fa-tools"></i> Procedimientos Realizados:</h6>
+                        <p class="mb-0">{{ bitacora.procedimientos }}</p>
+                    </div>
+                    
+                    {% if bitacora.observaciones %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2"><i class="fas fa-clipboard"></i> Observaciones:</h6>
+                        <p class="text-muted mb-0">{{ bitacora.observaciones }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if bitacora.repuestos_usados.all %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6 class="text-muted mb-2"><i class="fas fa-wrench"></i> Repuestos Utilizados:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for item in bitacora.repuestos_usados.all %}
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>
+                                        <i class="fas fa-cog text-primary"></i> 
+                                        {{ item.repuesto.nombre }} 
+                                        <span class="badge bg-secondary">{{ item.repuesto.codigo }}</span>
+                                    </span>
+                                    <span class="badge bg-primary">Cantidad: {{ item.cantidad }}</span>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No hay registros de bitácora aún</p>
+                <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Agregar Bitácora
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Presupuestos #}
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-file-invoice-dollar"></i> Presupuestos 
+            <span class="badge bg-dark">{{ presupuestos.count }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if presupuestos %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th class="text-end">Mano de Obra</th>
+                        <th class="text-end">Repuestos</th>
+                        <th class="text-end">Total</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for presupuesto in presupuestos %}
+                    <tr>
+                        <td>{{ presupuesto.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td>{{ presupuesto.descripcion|truncatewords:10 }}</td>
+                        <td class="text-end">${{ presupuesto.costo_mano_obra|floatformat:0 }}</td>
+                        <td class="text-end">${{ presupuesto.costo_repuestos|floatformat:0 }}</td>
+                        <td class="text-end"><strong>${{ presupuesto.total|floatformat:0 }}</strong></td>
+                        <td>
+                            <span class="badge 
+                                {% if presupuesto.estado == 'aprobado' %}bg-success
+                                {% elif presupuesto.estado == 'rechazado' %}bg-danger
+                                {% else %}bg-warning text-dark{% endif %}">
+                                {{ presupuesto.get_estado_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No hay presupuestos generados</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Botones de Acción #}
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col">
+                <a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Lista
+                </a>
+            </div>
+            <div class="col text-end">
+                <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Editar en Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

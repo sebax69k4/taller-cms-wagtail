@@ -18,6 +18,7 @@ urlpatterns = [
     path('gestion/', include('gestion.urls')),
     path("documents/", include(wagtaildocs_urls)),
     path("search/", search_views.search, name="search"),
+    path('', include(wagtail_urls)),
 ]
 
 

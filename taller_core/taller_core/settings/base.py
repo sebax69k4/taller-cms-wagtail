@@ -118,7 +118,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'America/Santiago'
 
 USE_I18N = True
 
@@ -134,7 +134,7 @@ STATICFILES_FINDERS = [
 ]
 
 STATICFILES_DIRS = [
-    os.path.join(PROJECT_DIR, "static"),
+    BASE_DIR / "gestion" / "static",  
 ]
 
 STATIC_ROOT = os.path.join(BASE_DIR, "static")

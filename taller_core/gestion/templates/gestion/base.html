@@ -35,7 +35,7 @@
                             <i class="fas fa-clipboard-list"></i> Órdenes
                         </a>
                     </li>
-                    {% if user.groups.all|length > 0 and 'Mecánico' not in user.groups.values_list|flatten %}
+                    {% if user.is_authenticated and user.is_superuser or user.groups.filter(name="Encargado").exists or user.groups.filter(name="Recepcionista").exists %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'gestion:asignar_trabajo' %}">
                                 <i class="fas fa-tasks"></i> Asignar Trabajos
