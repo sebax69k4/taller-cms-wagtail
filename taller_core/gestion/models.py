@@ -5,7 +5,10 @@ from modelcluster.models import ClusterableModel
 from wagtail.models import Orderable
 from wagtail.admin.panels import FieldPanel, InlinePanel
 from django.db import models
-from wagtail.admin.panels import FieldPanel  # <--- Importante: Se importa de wagtail.admin.panels
+from wagtail.admin.panels import FieldPanel  
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100)
@@ -308,3 +311,103 @@ class Alerta(models.Model):
         verbose_name = "Alerta"
         verbose_name_plural = "Alertas"
         ordering = ['-fecha_creacion']        
+
+
+
+class PerfilUsuario(models.Model):
+    """Perfil extendido para manejar roles y redirecciones"""
+    
+    ROLES = [
+        ('encargado', 'Encargado de Taller'),
+        ('mecanico', 'Mecánico'),
+        ('recepcionista', 'Recepcionista'),
+    ]
+    
+    usuario = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='perfil',
+        verbose_name="Usuario"
+    )
+    
+    rol = models.CharField(
+        max_length=20, 
+        choices=ROLES,
+        verbose_name="Rol en el sistema"
+    )
+    
+    # URL de redirección después del login
+    dashboard_url = models.CharField(
+        max_length=200,
+        blank=True,
+        default='/gestion/',
+        verbose_name="URL del Dashboard",
+        help_text="Página a la que se redirige tras iniciar sesión"
+    )
+    
+    # Información adicional
+    foto_perfil = models.ImageField(
+        upload_to='perfiles/',
+        blank=True,
+        null=True,
+        verbose_name="Foto de Perfil"
+    )
+    
+    telefono = models.CharField(
+        max_length=15,
+        blank=True,
+        verbose_name="Teléfono"
+    )
+    
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    
+    # Paneles para Wagtail Admin
+    panels = [
+        FieldPanel('usuario'),
+        FieldPanel('rol'),
+        FieldPanel('dashboard_url'),
+        FieldPanel('foto_perfil'),
+        FieldPanel('telefono'),
+        FieldPanel('activo'),
+    ]
+    
+    class Meta:
+        verbose_name = "Perfil de Usuario"
+        verbose_name_plural = "Perfiles de Usuario"
+    
+    def __str__(self):
+        return f"{self.usuario.get_full_name() or self.usuario.username} - {self.get_rol_display()}"
+    
+    def get_dashboard_url(self):
+        """Retorna la URL del dashboard según el rol"""
+        urls_por_rol = {
+            'encargado': '/gestion/',
+            'mecanico': '/gestion/ordenes/',
+            'recepcionista': '/gestion/ordenes/',
+        }
+        return self.dashboard_url or urls_por_rol.get(self.rol, '/gestion/')
+
+
+# Signal para crear perfil automáticamente
+@receiver(post_save, sender=User)
+def crear_perfil_usuario(sender, instance, created, **kwargs):
+    """Crea automáticamente un perfil cuando se crea un usuario"""
+    if created and not instance.is_superuser:
+        # Detectar rol por grupo
+        grupo = instance.groups.first()
+        rol_mapa = {
+            'Encargado': 'encargado',
+            'Mecánico': 'mecanico',
+            'Recepcionista': 'recepcionista',
+        }
+        
+        rol = 'recepcionista'  # Default
+        if grupo:
+            rol = rol_mapa.get(grupo.name, 'recepcionista')
+        
+        PerfilUsuario.objects.create(
+            usuario=instance,
+            rol=rol
+        )
+        print(f"✓ Perfil creado para {instance.username} con rol {rol}")

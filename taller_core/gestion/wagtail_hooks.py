@@ -9,7 +9,7 @@ from .models import (
     Cliente, Vehiculo, Mecanico, ZonaTrabajo, 
     OrdenTrabajo, Repuesto, Bitacora, Alerta, Presupuesto
 )
-
+from .models import PerfilUsuario
 
 # ============================================
 # SNIPPETS VIEWSETS - Gestión de Modelos
@@ -150,6 +150,14 @@ class AlertaSnippetViewSet(SnippetViewSet):
         return qs
 
 
+class PerfilUsuarioSnippetViewSet(SnippetViewSet):
+    model = PerfilUsuario
+    menu_label = "Perfiles de Usuario"
+    menu_icon = "user"
+    menu_order = 500  # Al final del menú
+    list_display = ("usuario", "rol", "activo", "fecha_creacion")
+    search_fields = ("usuario__username", "usuario__first_name", "usuario__last_name")
+    list_filter = ("rol", "activo")
 # ============================================
 # REGISTRO DE SNIPPETS
 # ============================================
@@ -163,7 +171,7 @@ register_snippet(ZonaTrabajoSnippetViewSet)      # Orden 210
 register_snippet(ClienteSnippetViewSet)          # Orden 300
 register_snippet(VehiculoSnippetViewSet)         # Orden 310
 register_snippet(RepuestoSnippetViewSet)         # Orden 400
-
+register_snippet(PerfilUsuarioSnippetViewSet)
 
 # ============================================
 # DASHBOARD PERSONALIZADO
@@ -230,6 +238,8 @@ class DashboardPanel(Component):
             ).order_by('-fecha_ingreso')[:10]
 
         return context
+    
+
 
 
 @hooks.register('construct_homepage_panels')

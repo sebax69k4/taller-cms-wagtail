@@ -9,7 +9,9 @@ from .models import (
     Cliente, Vehiculo, OrdenTrabajo, Mecanico, 
     ZonaTrabajo, Bitacora, Repuesto, Alerta, Presupuesto
 )
-
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
+from django.shortcuts import render, redirect
 
 # ============================================
 # UC-001: REGISTRAR CLIENTE (Recepcionista)
@@ -341,3 +343,133 @@ def generar_factura(request, pk):
     orden = get_object_or_404(OrdenTrabajo, pk=pk)
     messages.info(request, 'Función de facturación en desarrollo')
     return redirect('gestion:orden_detail', pk=pk)
+
+
+def login_view(request):
+    """Vista de login personalizada con redirección por rol"""
+    
+    # Si ya está autenticado, redirigir a su dashboard
+    if request.user.is_authenticated:
+        return redirect_segun_rol(request.user)
+    
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Bienvenido {user.get_full_name() or user.username}')
+                
+                # Redirigir según rol
+                return redirect_segun_rol(user)
+            else:
+                messages.error(request, 'Usuario o contraseña incorrectos')
+        else:
+            messages.error(request, 'Usuario o contraseña incorrectos')
+    else:
+        form = AuthenticationForm()
+    
+    context = {'form': form}
+    return render(request, 'gestion/login.html', context)
+
+
+def logout_view(request):
+    """Vista de logout"""
+    logout(request)
+    messages.info(request, 'Has cerrado sesión correctamente')
+    return redirect('gestion:login')
+
+
+def redirect_segun_rol(user):
+    """Función auxiliar para redirigir según el rol del usuario"""
+    
+    # Superusuario al admin de Wagtail
+    if user.is_superuser:
+        return redirect('/admin/')
+    
+    # Intentar usar perfil personalizado
+    try:
+        perfil = user.perfil
+        return redirect(perfil.get_dashboard_url())
+    except:
+        pass
+    
+    # Si no tiene perfil, usar grupo
+    grupos = user.groups.values_list('name', flat=True)
+    
+    if 'Encargado' in grupos:
+        return redirect('gestion:dashboard')
+    elif 'Mecánico' in grupos:
+        return redirect('gestion:orden_list')
+    elif 'Recepcionista' in grupos:
+        return redirect('gestion:orden_list')
+    
+    # Default
+    return redirect('gestion:dashboard')
+
+
+
+# ============================================
+# DASHBOARD SEGÚN ROL
+# ============================================
+
+@login_required
+def mi_dashboard(request):
+    """Vista de dashboard que se adapta según el rol"""
+    
+    # Detectar rol
+    if request.user.is_superuser:
+        rol = 'superusuario'
+    else:
+        try:
+            rol = request.user.perfil.rol
+        except:
+            grupos = request.user.groups.values_list('name', flat=True)
+            if 'Encargado' in grupos:
+                rol = 'encargado'
+            elif 'Mecánico' in grupos:
+                rol = 'mecanico'
+            elif 'Recepcionista' in grupos:
+                rol = 'recepcionista'
+            else:
+                rol = 'sin_rol'
+    
+    # Datos según rol
+    if rol == 'encargado' or rol == 'superusuario':
+        # Dashboard completo
+        return dashboard_view(request)
+    
+    elif rol == 'mecanico':
+        # Dashboard de mecánico (solo sus órdenes)
+        try:
+            mecanico = request.user.perfil_mecanico
+            ordenes = OrdenTrabajo.objects.filter(
+                mecanico_asignado=mecanico
+            ).exclude(estado='entregado').select_related('vehiculo', 'cliente')
+            
+            context = {
+                'rol': 'mecanico',
+                'ordenes': ordenes,
+                'mecanico': mecanico,
+            }
+            return render(request, 'gestion/dashboard_mecanico.html', context)
+        except:
+            return redirect('gestion:orden_list')
+    
+    elif rol == 'recepcionista':
+        # Dashboard de recepcionista
+        ordenes_recientes = OrdenTrabajo.objects.select_related(
+            'vehiculo', 'cliente'
+        ).order_by('-fecha_ingreso')[:10]
+        
+        context = {
+            'rol': 'recepcionista',
+            'ordenes_recientes': ordenes_recientes,
+        }
+        return render(request, 'gestion/dashboard_recepcionista.html', context)
+    
+    # Sin rol
+    return render(request, 'gestion/sin_acceso.html')
