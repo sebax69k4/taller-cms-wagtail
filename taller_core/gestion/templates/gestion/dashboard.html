@@ -1,89 +1,271 @@
 {# taller_core/gestion/templates/gestion/dashboard.html #}
 {% extends "gestion/base.html" %}
-{% load static json_script %}
+{% load static %}
 
-{% block title %}Dashboard - Taller Mecánico{% endblock %}
+{% block title %}Dashboard - Encargado{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1><i class="fas fa-tachometer-alt"></i> Dashboard del Taller</h1>
-    </div>
-</div>
-
-{# Alertas #}
-{% if alertas %}
-<div class="alert alert-warning">
-    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Alertas Activas</h5>
-    <ul>
-        {% for alerta in alertas %}
-        <li>{{ alerta.mensaje }}</li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-{# Tarjetas de estadísticas #}
-<div class="row mb-4">
-    <div class="col-md-3"><div class="card text-center bg-info text-white"><div class="card-body"><h2>{{ stats.recepcionadas }}</h2><p>Recepcionadas</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center bg-primary text-white"><div class="card-body"><h2>{{ stats.en_diagnostico }}</h2><p>En Diagnóstico</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center bg-warning text-dark"><div class="card-body"><h2>{{ stats.en_reparacion }}</h2><p>En Reparación</p></div></div></div>
-    <div class="col-md-3"><div class="card text-center bg-success text-white"><div class="card-body"><h2>{{ stats.listas }}</h2><p>Listas</p></div></div></div>
-</div>
-
-{# Gráfico y Órdenes Recientes #}
-<div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Distribución de Órdenes Activas</div>
-            <div class="card-body">
-                <canvas id="estadosChart"></canvas>
+<div class="container-fluid py-4 fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-tachometer-alt me-3"></i>Dashboard del Taller</h1>
+                    <p class="mb-0">Panel de Control General - {{ user.get_full_name|default:user.username }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-danger" style="font-size: 1.1rem;">
+                        <i class="fas fa-user-shield me-2"></i>Encargado
+                    </span>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">Órdenes Recientes</div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead><tr><th>ID</th><th>Vehículo</th><th>Estado</th></tr></thead>
-                    <tbody>
-                        {% for orden in ordenes_recientes %}
-                        <tr>
-                            <td>#{{ orden.id }}</td>
-                            <td>{{ orden.vehiculo.patente }}</td>
-                            <td><span class="badge bg-info">{{ orden.get_estado_display }}</span></td>
-                        </tr>
+
+    <!-- Alertas de Stock Bajo -->
+    {% if alertas %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Alertas de Stock Bajo</h5>
+        <ul class="mb-0">
+            {% for alerta in alertas %}
+            <li><strong>{{ alerta.repuesto.nombre }}:</strong> Stock actual {{ alerta.repuesto.stock_actual }} (Mínimo: {{ alerta.repuesto.stock_minimo }})</li>
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats -->
+    <div class="row quick-stats">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                <h3>{{ stats.total_ordenes }}</h3>
+                <p>Total Órdenes</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                <h3>{{ stats.activas }}</h3>
+                <p>Órdenes Activas</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card info">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <h3>{{ stats.recepcionadas }}</h3>
+                <p>Sin Asignar</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <h3>{{ stats.listas }}</h3>
+                <p>Listas para Entrega</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estados de Órdenes -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4 class="mb-3"><i class="fas fa-chart-pie me-2"></i>Estado de Órdenes</h4>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #6c757d;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.recepcionadas }}</h4>
+                    <small class="text-muted">Recepcionadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #17a2b8;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.en_diagnostico }}</h4>
+                    <small class="text-muted">En Diagnóstico</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #ffc107;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.en_reparacion }}</h4>
+                    <small class="text-muted">En Reparación</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #dc3545;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.espera_repuesto|default:0 }}</h4>
+                    <small class="text-muted">Esperando Repuesto</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #28a745;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.listas }}</h4>
+                    <small class="text-muted">Listas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-2">
+            <div class="card text-center" style="border-left: 4px solid #343a40;">
+                <div class="card-body">
+                    <h4 class="mb-0">{{ stats.entregadas|default:0 }}</h4>
+                    <small class="text-muted">Entregadas</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4 class="mb-3"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h4>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:asignar_trabajo' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-user-cog"></i></div>
+                    <h5>Asignar Mecánico</h5>
+                    <p>Asignar órdenes a mecánicos</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:disponibilidad' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                    <h5>Disponibilidad</h5>
+                    <p>Ver carga de mecánicos</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:orden_list' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-list"></i></div>
+                    <h5>Ver Órdenes</h5>
+                    <p>Todas las órdenes de trabajo</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:crear_orden' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-plus-circle"></i></div>
+                    <h5>Nueva Orden</h5>
+                    <p>Crear orden de trabajo</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Órdenes Recientes -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Órdenes Recientes</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if ordenes_recientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vehículo</th>
+                                    <th>Cliente</th>
+                                    <th>Mecánico</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in ordenes_recientes %}
+                                <tr>
+                                    <td><strong>#{{ orden.id }}</strong></td>
+                                    <td>{{ orden.vehiculo.patente }}</td>
+                                    <td>{{ orden.cliente.nombre|truncatewords:2 }}</td>
+                                    <td>
+                                        {% if orden.mecanico_asignado %}
+                                        <span class="badge bg-info">{{ orden.mecanico_asignado.nombre|truncatewords:1 }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Sin asignar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ orden.get_estado_color }}">
+                                            {{ orden.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'gestion:orden_detail' orden.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h5>No hay órdenes recientes</h5>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Mecánicos y Carga de Trabajo -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-users-cog me-2"></i>Estado de Mecánicos</h5>
+                </div>
+                <div class="card-body">
+                    {% if mecanicos_stats %}
+                    <div class="list-group list-group-flush">
+                        {% for mecanico in mecanicos_stats %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-user-cog text-success me-2"></i>
+                                <strong>{{ mecanico.nombre }}</strong>
+                                {% if mecanico.disponible %}
+                                <span class="badge bg-success ms-2">Disponible</span>
+                                {% else %}
+                                <span class="badge bg-danger ms-2">No disponible</span>
+                                {% endif %}
+                            </div>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ mecanico.ordenes_activas }} órdenes activas
+                            </span>
+                        </div>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-user-cog"></i>
+                        <h5>No hay mecánicos registrados</h5>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{% url 'gestion:disponibilidad' %}" class="btn btn-sm btn-success">
+                        Ver Detalles <i class="fas fa-arrow-right ms-2"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% json_script stats "stats-data" %}
-<script>
-const stats = JSON.parse(document.getElementById('stats-data').textContent);
-const ctx = document.getElementById('estadosChart');
-if (ctx) {
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Recepcionadas', 'En Diagnóstico', 'En Reparación', 'Listas'],
-            datasets: [{
-                data: [stats.recepcionadas, stats.en_diagnostico, stats.en_reparacion, stats.listas],
-                backgroundColor: ['#17a2b8', '#007bff', '#ffc107', '#28a745']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'top' } }
-        }
-    });
-}
-</script>
 {% endblock %}

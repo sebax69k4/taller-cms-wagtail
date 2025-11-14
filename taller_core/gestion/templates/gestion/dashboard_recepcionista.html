@@ -4,152 +4,201 @@
 {% block title %}Dashboard - Recepcionista{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1><i class="fas fa-desktop"></i> Panel de Recepción</h1>
-        <p class="text-muted">Gestión de ingresos y atención al cliente</p>
-    </div>
-    <div class="col-md-4 text-end">
-        <a href="/admin/snippets/gestion/ordentrabajo/add/" class="btn btn-success btn-lg">
-            <i class="fas fa-plus-circle"></i> Nueva Orden
-        </a>
-    </div>
-</div>
-
-{# Cards de Estadísticas #}
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card border-info">
-            <div class="card-body text-center">
-                <i class="fas fa-clipboard-list fa-2x text-info mb-2"></i>
-                <h3 class="mb-0">{{ ordenes_recientes.count }}</h3>
-                <small class="text-muted">Órdenes Recientes</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-success">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-2x text-success mb-2"></i>
-                <h3 class="mb-0">{{ total_clientes|default:0 }}</h3>
-                <small class="text-muted">Clientes Activos</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-primary">
-            <div class="card-body text-center">
-                <i class="fas fa-car fa-2x text-primary mb-2"></i>
-                <h3 class="mb-0">{{ total_vehiculos|default:0 }}</h3>
-                <small class="text-muted">Vehículos Registrados</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-warning">
-            <div class="card-body text-center">
-                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                <h3 class="mb-0">{{ ordenes_pendientes|default:0 }}</h3>
-                <small class="text-muted">Sin Asignar</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-{# Órdenes Recientes #}
-<div class="card mb-4">
-    <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="fas fa-history"></i> Órdenes Ingresadas Recientemente</h5>
-    </div>
-    <div class="card-body p-0">
-        {% if ordenes_recientes %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Cliente</th>
-                        <th>Vehículo</th>
-                        <th>Estado</th>
-                        <th>Fecha Ingreso</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for orden in ordenes_recientes %}
-                    <tr>
-                        <td><strong>#{{ orden.id }}</strong></td>
-                        <td>
-                            {{ orden.cliente.nombre }} {{ orden.cliente.apellido }}<br>
-                            <small class="text-muted">{{ orden.cliente.telefono }}</small>
-                        </td>
-                        <td>
-                            <strong>{{ orden.vehiculo.patente }}</strong><br>
-                            <small>{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
-                        </td>
-                        <td>
-                            <span class="badge 
-                                {% if orden.estado == 'recepcionado' %}bg-info
-                                {% elif orden.estado == 'diagnostico' %}bg-primary
-                                {% else %}bg-secondary{% endif %}">
-                                {{ orden.get_estado_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {{ orden.fecha_ingreso|date:"d/m/Y" }}<br>
-                            <small class="text-muted">{{ orden.fecha_ingreso|time:"H:i" }}</small>
-                        </td>
-                        <td>
-                            <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-eye"></i> Ver
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <p class="text-muted">No hay órdenes recientes</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-{# Accesos Rápidos #}
-<div class="row">
-    <div class="col-md-6">
-        <div class="card border-success">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="fas fa-user-plus"></i> Gestión de Clientes</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="/admin/snippets/gestion/cliente/add/" class="btn btn-success">
-                        <i class="fas fa-plus"></i> Nuevo Cliente
-                    </a>
-                    <a href="{% url 'gestion:lista_clientes' %}" class="btn btn-outline-success">
-                        <i class="fas fa-list"></i> Ver Todos los Clientes
-                    </a>
+<div class="container-fluid py-4 fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-th-large me-3"></i>Dashboard - Recepcionista</h1>
+                    <p class="mb-0">Bienvenido, {{ user.get_full_name|default:user.username }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-info" style="font-size: 1.1rem;">
+                        <i class="fas fa-user-tie me-2"></i>Recepcionista
+                    </span>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="fas fa-car"></i> Gestión de Vehículos</h6>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4 class="mb-3"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h4>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:registrar_cliente' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-user-plus"></i></div>
+                    <h5>Nuevo Cliente</h5>
+                    <p>Registrar un nuevo cliente en el sistema</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:registrar_vehiculo' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-car"></i></div>
+                    <h5>Nuevo Vehículo</h5>
+                    <p>Registrar un vehículo para un cliente</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:crear_orden' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-file-alt"></i></div>
+                    <h5>Nueva Orden</h5>
+                    <p>Crear una nueva orden de trabajo</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{% url 'gestion:orden_list' %}" class="text-decoration-none">
+                <div class="action-card">
+                    <div class="icon"><i class="fas fa-clipboard-list"></i></div>
+                    <h5>Ver Órdenes</h5>
+                    <p>Ver todas las órdenes de trabajo</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row quick-stats">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <h3>{{ total_clientes|default:0 }}</h3>
+                <p>Clientes Registrados</p>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="/admin/snippets/gestion/vehiculo/add/" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Nuevo Vehículo
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card info">
+                <div class="stat-icon"><i class="fas fa-car"></i></div>
+                <h3>{{ total_vehiculos|default:0 }}</h3>
+                <p>Vehículos Registrados</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                <h3>{{ ordenes_activas|default:0 }}</h3>
+                <p>Órdenes Activas</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <h3>{{ ordenes_hoy|default:0 }}</h3>
+                <p>Órdenes Creadas Hoy</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders & Lists -->
+    <div class="row">
+        <!-- Recent Orders -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Órdenes Recientes</h5>
+                </div>
+                <div class="card-body">
+                    {% if ordenes_recientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Vehículo</th>
+                                    <th>Cliente</th>
+                                    <th>Estado</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for orden in ordenes_recientes %}
+                                <tr>
+                                    <td><strong>#{{ orden.id }}</strong></td>
+                                    <td>{{ orden.vehiculo.patente }}</td>
+                                    <td>{{ orden.cliente.nombre|truncatewords:2 }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ orden.get_estado_color }}">
+                                            {{ orden.get_estado_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'gestion:orden_detail' orden.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h5>No hay órdenes recientes</h5>
+                        <p>Las órdenes creadas aparecerán aquí</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-center">
+                    <a href="{% url 'gestion:orden_list' %}" class="btn btn-sm btn-primary">
+                        Ver Todas las Órdenes <i class="fas fa-arrow-right ms-2"></i>
                     </a>
-                    <a href="{% url 'gestion:lista_vehiculos' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-list"></i> Ver Todos los Vehículos
-                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Access Lists -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Acceso Rápido</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="{% url 'gestion:lista_clientes' %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-users text-primary me-2"></i>Ver Lista de Clientes</span>
+                            <span class="badge bg-primary rounded-pill">{{ total_clientes|default:0 }}</span>
+                        </a>
+                        <a href="{% url 'gestion:lista_vehiculos' %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-car text-info me-2"></i>Ver Lista de Vehículos</span>
+                            <span class="badge bg-info rounded-pill">{{ total_vehiculos|default:0 }}</span>
+                        </a>
+                        <a href="{% url 'gestion:orden_list' %}?estado=recepcionado" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-inbox text-secondary me-2"></i>Órdenes Recepcionadas</span>
+                            <span class="badge bg-secondary rounded-pill">{{ ordenes_recepcionadas|default:0 }}</span>
+                        </a>
+                        <a href="{% url 'gestion:orden_list' %}?estado=listo_entrega" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-check-circle text-success me-2"></i>Listas para Entrega</span>
+                            <span class="badge bg-success rounded-pill">{{ ordenes_listas|default:0 }}</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Consejos Rápidos</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0" style="font-size: 0.9rem;">
+                        <li class="mb-2">Verifica siempre los datos del cliente antes de crear una orden</li>
+                        <li class="mb-2">Registra el kilometraje del vehículo al ingreso</li>
+                        <li>El encargado asignará el mecánico a cada orden</li>
+                    </ul>
                 </div>
             </div>
         </div>

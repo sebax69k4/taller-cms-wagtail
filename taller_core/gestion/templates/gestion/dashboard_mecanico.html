@@ -4,131 +4,159 @@
 {% block title %}Mi Dashboard - Mecánico{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1><i class="fas fa-tools"></i> Panel de Trabajo</h1>
-        <p class="text-muted">Mecánico: {{ mecanico.nombre }} - {{ mecanico.especialidad }}</p>
-    </div>
-</div>
-
-{# Estadísticas #}
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h2>{{ ordenes.count }}</h2>
-                <p class="mb-0"><i class="fas fa-clipboard-list"></i> Órdenes Activas</p>
+<div class="container-fluid py-4 fade-in">
+    <!-- Page Header -->
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-tools me-3"></i>Panel de Trabajo - Mecánico</h1>
+                    <p class="mb-0">{{ mecanico.nombre }} - {{ mecanico.especialidad|default:"Mecánico General" }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-success" style="font-size: 1.1rem;">
+                        <i class="fas fa-user-cog me-2"></i>Mecánico
+                    </span>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-warning text-dark">
-            <div class="card-body text-center">
-                <h2>{{ stats.en_curso }}</h2>
-                <p class="mb-0"><i class="fas fa-wrench"></i> En Reparación</p>
+
+    <!-- Quick Stats -->
+    <div class="row quick-stats">
+        <div class="col-md-4 mb-3">
+            <div class="stat-card primary">
+                <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                <h3>{{ ordenes.count }}</h3>
+                <p>Órdenes Asignadas</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card warning">
+                <div class="stat-icon"><i class="fas fa-wrench"></i></div>
+                <h3>{{ en_reparacion|default:0 }}</h3>
+                <p>En Reparación</p>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card success">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <h3>{{ completadas_hoy|default:0 }}</h3>
+                <p>Completadas Hoy</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h2>{{ stats.completadas|default:0 }}</h2>
-                <p class="mb-0"><i class="fas fa-check"></i> Completadas Hoy</p>
+
+    <!-- Órdenes Asignadas -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Mis Órdenes Asignadas</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if ordenes %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Vehículo</th>
+                            <th>Cliente</th>
+                            <th>Problema</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th>Zona</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orden in ordenes %}
+                        <tr>
+                            <td><strong>#{{ orden.id }}</strong></td>
+                            <td>
+                                <strong class="text-primary">{{ orden.vehiculo.patente }}</strong><br>
+                                <small class="text-muted">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
+                            </td>
+                            <td>{{ orden.cliente.nombre }}</td>
+                            <td>
+                                <small>{{ orden.descripcion_problema|truncatewords:8 }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ orden.get_estado_color }}">
+                                    {{ orden.get_estado_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if orden.prioridad == 'alta' %}
+                                <span class="badge priority-alta">Alta</span>
+                                {% elif orden.prioridad == 'media' %}
+                                <span class="badge priority-media">Media</span>
+                                {% else %}
+                                <span class="badge priority-baja">Baja</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if orden.zona_trabajo %}
+                                    <small>{{ orden.zona_trabajo.nombre }}</small>
+                                {% else %}
+                                    <small class="text-muted">-</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'gestion:orden_detail' orden.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="Ver Detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'gestion:agregar_bitacora' orden.id %}" 
+                                       class="btn btn-sm btn-outline-success" title="Agregar Bitácora">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h5>No tienes órdenes asignadas</h5>
+                <p>Las órdenes asignadas por el encargado aparecerán aquí</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Instrucciones y Tips -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Instrucciones</h6>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0" style="font-size: 0.9rem;">
+                        <li class="mb-2">Revisa tus órdenes asignadas en la tabla superior</li>
+                        <li class="mb-2">Click en <i class="fas fa-eye"></i> para ver el detalle de cada orden</li>
+                        <li class="mb-2">Click en <i class="fas fa-plus"></i> para agregar una bitácora de trabajo</li>
+                        <li>Registra los repuestos utilizados en cada bitácora</li>
+                    </ol>
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-{# Órdenes Asignadas #}
-<div class="card">
-    <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="fas fa-list"></i> Mis Órdenes Asignadas</h5>
-    </div>
-    <div class="card-body p-0">
-        {% if ordenes %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID</th>
-                        <th>Vehículo</th>
-                        <th>Cliente</th>
-                        <th>Problema</th>
-                        <th>Estado</th>
-                        <th>Prioridad</th>
-                        <th>Zona</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for orden in ordenes %}
-                    <tr>
-                        <td><strong>#{{ orden.id }}</strong></td>
-                        <td>
-                            <i class="fas fa-car text-primary"></i>
-                            {{ orden.vehiculo.patente }}<br>
-                            <small class="text-muted">{{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</small>
-                        </td>
-                        <td>{{ orden.cliente.nombre }} {{ orden.cliente.apellido }}</td>
-                        <td>
-                            <small>{{ orden.descripcion_problema|truncatewords:8 }}</small>
-                        </td>
-                        <td>
-                            <span class="badge 
-                                {% if orden.estado == 'diagnostico' %}bg-info
-                                {% elif orden.estado == 'en_reparacion' %}bg-warning text-dark
-                                {% elif orden.estado == 'espera_repuesto' %}bg-secondary
-                                {% elif orden.estado == 'listo_entrega' %}bg-success
-                                {% endif %}">
-                                {{ orden.get_estado_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge 
-                                {% if orden.prioridad == 'alta' %}bg-danger
-                                {% elif orden.prioridad == 'media' %}bg-warning text-dark
-                                {% else %}bg-secondary{% endif %}">
-                                {{ orden.get_prioridad_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if orden.zona_trabajo %}
-                                <small>{{ orden.zona_trabajo.nombre }}</small>
-                            {% else %}
-                                <small class="text-muted">-</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'gestion:orden_detail' orden.id %}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-eye"></i> Ver
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <p class="text-muted">No tienes órdenes asignadas actualmente</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-{# Accesos Rápidos #}
-<div class="row mt-4">
-    <div class="col">
-        <div class="card">
-            <div class="card-body">
-                <h6>Accesos Rápidos</h6>
-                <a href="{% url 'gestion:orden_list' %}" class="btn btn-outline-primary me-2">
-                    <i class="fas fa-list"></i> Ver Todas Mis Órdenes
-                </a>
-                <a href="/admin/snippets/gestion/repuesto/" class="btn btn-outline-secondary">
-                    <i class="fas fa-archive"></i> Consultar Repuestos
-                </a>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recordatorios</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0" style="font-size: 0.9rem;">
+                        <li class="mb-2">Registra las horas trabajadas en cada bitácora</li>
+                        <li class="mb-2">Selecciona los repuestos utilizados - el stock se descontará automáticamente</li>
+                        <li>Si falta un repuesto, notifica al encargado para que cambie el estado a "Esperando Repuesto"</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

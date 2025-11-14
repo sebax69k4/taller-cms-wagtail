@@ -248,11 +248,23 @@ def dashboard_view(request):
         'recepcionadas': OrdenTrabajo.objects.filter(estado='recepcionado').count(),
         'en_diagnostico': OrdenTrabajo.objects.filter(estado='diagnostico').count(),
         'en_reparacion': OrdenTrabajo.objects.filter(estado='en_reparacion').count(),
+        'espera_repuesto': OrdenTrabajo.objects.filter(estado='espera_repuesto').count(),
         'listas': OrdenTrabajo.objects.filter(estado='listo_entrega').count(),
+        'entregadas': OrdenTrabajo.objects.filter(estado='entregado').count(),
     }
     
-    # Alertas activas (RF007)
-    alertas = Alerta.objects.filter(resuelta=False).order_by('-fecha_creacion')[:5]
+    # Alertas de stock bajo - repuestos con stock actual <= stock mínimo
+    alertas_stock = Repuesto.objects.filter(
+        stock_actual__lte=models.F('stock_minimo')
+    ).select_related()[:10]
+    
+    # Crear objetos de alerta para la vista
+    alertas = []
+    for repuesto in alertas_stock:
+        alertas.append({
+            'mensaje': f'{repuesto.nombre} - Stock: {repuesto.stock_actual} (Mínimo: {repuesto.stock_minimo})',
+            'repuesto': repuesto
+        })
     
     # Órdenes recientes
     ordenes_recientes = OrdenTrabajo.objects.select_related(
@@ -264,7 +276,7 @@ def dashboard_view(request):
         ordenes_activas=Count('ordenes', filter=Q(ordenes__estado__in=[
             'diagnostico', 'en_reparacion', 'espera_repuesto'
         ]))
-    ).filter(disponible=True)
+    ).all()
     
     context = {
         'stats': stats,
@@ -650,30 +662,68 @@ def mi_dashboard(request):
     
     elif rol == 'mecanico':
         # Dashboard de mecánico (solo sus órdenes)
+        from django.utils import timezone
+        
         try:
-            mecanico = request.user.perfil_mecanico
+            mecanico = request.user.mecanico
             ordenes = OrdenTrabajo.objects.filter(
                 mecanico_asignado=mecanico
-            ).exclude(estado='entregado').select_related('vehiculo', 'cliente')
+            ).exclude(estado='entregado').select_related('vehiculo', 'cliente', 'zona_trabajo')
+            
+            # Estadísticas específicas del mecánico
+            en_reparacion = ordenes.filter(estado='en_reparacion').count()
+            
+            hoy = timezone.now().date()
+            completadas_hoy = OrdenTrabajo.objects.filter(
+                mecanico_asignado=mecanico,
+                estado='listo_entrega',
+                fecha_finalizacion__date=hoy
+            ).count()
             
             context = {
                 'rol': 'mecanico',
                 'ordenes': ordenes,
                 'mecanico': mecanico,
+                'en_reparacion': en_reparacion,
+                'completadas_hoy': completadas_hoy,
             }
             return render(request, 'gestion/dashboard_mecanico.html', context)
         except:
             return redirect('gestion:orden_list')
     
     elif rol == 'recepcionista':
-        # Dashboard de recepcionista
+        # Dashboard de recepcionista con estadísticas
+        from django.utils import timezone
+        from datetime import datetime
+        
         ordenes_recientes = OrdenTrabajo.objects.select_related(
             'vehiculo', 'cliente'
         ).order_by('-fecha_ingreso')[:10]
         
+        # Estadísticas
+        total_clientes = Cliente.objects.count()
+        total_vehiculos = Vehiculo.objects.count()
+        ordenes_activas = OrdenTrabajo.objects.exclude(estado='entregado').count()
+        
+        # Órdenes creadas hoy
+        hoy = timezone.now().date()
+        ordenes_hoy = OrdenTrabajo.objects.filter(
+            fecha_ingreso__date=hoy
+        ).count()
+        
+        # Órdenes por estado
+        ordenes_recepcionadas = OrdenTrabajo.objects.filter(estado='recepcionado').count()
+        ordenes_listas = OrdenTrabajo.objects.filter(estado='listo_entrega').count()
+        
         context = {
             'rol': 'recepcionista',
             'ordenes_recientes': ordenes_recientes,
+            'total_clientes': total_clientes,
+            'total_vehiculos': total_vehiculos,
+            'ordenes_activas': ordenes_activas,
+            'ordenes_hoy': ordenes_hoy,
+            'ordenes_recepcionadas': ordenes_recepcionadas,
+            'ordenes_listas': ordenes_listas,
         }
         return render(request, 'gestion/dashboard_recepcionista.html', context)
     
