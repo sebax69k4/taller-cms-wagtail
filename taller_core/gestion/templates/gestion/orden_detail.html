@@ -147,10 +147,28 @@
     </div>
 </div>
 
-<a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
-    <i class="fas fa-arrow-left"></i> Volver
-</a>
-<a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary">
-    <i class="fas fa-edit"></i> Editar
-</a>
+{# Botones de Acción #}
+<div class="card mt-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col">
+                <a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver a Lista
+                </a>
+            </div>
+            <div class="col text-end">
+                <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Editar Orden
+                </a>
+                
+                {# BOTÓN DE FACTURA #}
+                {% if orden.estado == "listo_entrega" or orden.estado == "entregado" %}
+                <a href="{% url 'gestion:generar_factura' orden.id %}" class="btn btn-success">
+                    <i class="fas fa-file-invoice"></i> Generar Factura
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

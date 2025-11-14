@@ -1,0 +1,101 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Agregar Bitácora - Orden #{{ orden.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Info de la orden -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Orden #{{ orden.id }} - {{ orden.vehiculo.patente }}</h5>
+                    <p class="mb-1"><strong>Vehículo:</strong> {{ orden.vehiculo.marca }} {{ orden.vehiculo.modelo }}</p>
+                    <p class="mb-1"><strong>Cliente:</strong> {{ orden.cliente.nombre }}</p>
+                    <p class="mb-0"><strong>Estado:</strong> 
+                        <span class="badge bg-{{ orden.get_estado_color }}">{{ orden.get_estado_display }}</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Formulario de bitácora -->
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Agregar Bitácora de Trabajo</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.fecha.id_for_label }}" class="form-label">
+                                    Fecha <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}
+                                <div class="text-danger small">{{ form.fecha.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.horas_trabajadas.id_for_label }}" class="form-label">
+                                    Horas Trabajadas
+                                </label>
+                                {{ form.horas_trabajadas }}
+                                {% if form.horas_trabajadas.errors %}
+                                <div class="text-danger small">{{ form.horas_trabajadas.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                                Descripción del Trabajo Realizado <span class="text-danger">*</span>
+                            </label>
+                            {{ form.descripcion }}
+                            {% if form.descripcion.errors %}
+                            <div class="text-danger small">{{ form.descripcion.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.procedimientos.id_for_label }}" class="form-label">
+                                Procedimientos / Repuestos Utilizados
+                            </label>
+                            {{ form.procedimientos }}
+                            {% if form.procedimientos.errors %}
+                            <div class="text-danger small">{{ form.procedimientos.errors }}</div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Mantenga presionado Ctrl (Cmd en Mac) para seleccionar múltiples items
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Esta bitácora quedará registrada en el historial de la orden de trabajo.
+                            Los repuestos seleccionados se descontarán del inventario si tienen control de stock.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'gestion:orden_detail' orden.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver a la Orden
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>Guardar Bitácora
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

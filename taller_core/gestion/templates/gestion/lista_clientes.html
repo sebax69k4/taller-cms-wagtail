@@ -1,0 +1,99 @@
+{% extends "gestion/base.html" %}
+{% load static %}
+
+{% block title %}Lista de Clientes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-users me-2"></i>Lista de Clientes</h2>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'gestion:registrar_cliente' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nuevo Cliente
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <form method="get" class="input-group">
+                <input type="text" name="buscar" class="form-control" 
+                       placeholder="Buscar por nombre, RUT o teléfono..." 
+                       value="{{ request.GET.buscar }}">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+                {% if request.GET.buscar %}
+                <a href="{% url 'gestion:lista_clientes' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Limpiar
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de clientes -->
+    <div class="card">
+        <div class="card-body">
+            {% if clientes %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>RUT</th>
+                            <th>Nombre</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Dirección</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr>
+                            <td>{{ cliente.rut }}</td>
+                            <td><strong>{{ cliente.nombre }}</strong></td>
+                            <td>
+                                {% if cliente.telefono %}
+                                <i class="fas fa-phone me-1"></i>{{ cliente.telefono }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if cliente.email %}
+                                <i class="fas fa-envelope me-1"></i>{{ cliente.email }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cliente.direccion|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'gestion:editar_cliente' cliente.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                {% if request.GET.buscar %}
+                    No se encontraron clientes con "<strong>{{ request.GET.buscar }}</strong>"
+                {% else %}
+                    No hay clientes registrados. <a href="{% url 'gestion:registrar_cliente' %}">Registre el primero</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

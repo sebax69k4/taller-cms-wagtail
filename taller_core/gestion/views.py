@@ -1,64 +1,235 @@
 # taller_core/gestion/views.py
 
-from datetime import timezone
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Count
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Q, Count, Sum
 from django.contrib import messages
 from django.http import JsonResponse
 from .models import (
     Cliente, Vehiculo, OrdenTrabajo, Mecanico, 
     ZonaTrabajo, Bitacora, Repuesto, Alerta, Presupuesto)
+from .forms import ClienteForm, VehiculoForm, OrdenTrabajoForm, BitacoraForm, PresupuestoForm
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render, redirect
-from django.db.models import Sum
 from django.core.paginator import Paginator
 
 # ============================================
-# UC-001: REGISTRAR CLIENTE (Recepcionista)
+# DECORADORES DE PERMISOS
+# ============================================
+def es_recepcionista_o_encargado(user):
+    return user.is_superuser or user.groups.filter(name__in=['Recepcionista', 'Encargado']).exists()
+
+def es_encargado(user):
+    return user.is_superuser or user.groups.filter(name='Encargado').exists()
+
+def es_mecanico(user):
+    return user.groups.filter(name='Mecánico').exists() or user.is_superuser
+
+# ============================================
+# UC-001: GESTIÓN DE CLIENTES (Recepcionista)
 # ============================================
 @login_required
+@user_passes_test(es_recepcionista_o_encargado)
 def lista_clientes(request):
     """Vista para listar clientes"""
     clientes = Cliente.objects.all().order_by('-fecha_registro')
-    context = {'clientes': clientes}
+    
+    # Búsqueda
+    buscar = request.GET.get('buscar')
+    if buscar:
+        clientes = clientes.filter(
+            Q(nombre__icontains=buscar) |
+            Q(apellido__icontains=buscar) |
+            Q(email__icontains=buscar) |
+            Q(telefono__icontains=buscar)
+        )
+    
+    context = {'clientes': clientes, 'buscar': buscar}
     return render(request, 'gestion/lista_clientes.html', context)
 
 
 @login_required
+@user_passes_test(es_recepcionista_o_encargado)
 def registrar_cliente(request):
-    """Vista simplificada para que el recepcionista registre clientes"""
+    """Vista para registrar un nuevo cliente"""
     if request.method == 'POST':
-        # Procesar formulario (simplificado para el caso de uso)
-        messages.success(request, 'Cliente registrado exitosamente')
-        return redirect('gestion:lista_clientes')
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            cliente = form.save()
+            messages.success(request, f'Cliente {cliente.nombre} {cliente.apellido} registrado exitosamente')
+            return redirect('gestion:lista_clientes')
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario')
+    else:
+        form = ClienteForm()
     
-    return render(request, 'gestion/registrar_cliente.html')
+    context = {'form': form}
+    return render(request, 'gestion/registrar_cliente.html', context)
+
+
+@login_required
+@user_passes_test(es_recepcionista_o_encargado)
+def editar_cliente(request, pk):
+    """Vista para editar un cliente existente"""
+    cliente = get_object_or_404(Cliente, pk=pk)
+    
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Cliente {cliente.nombre} {cliente.apellido} actualizado exitosamente')
+            return redirect('gestion:lista_clientes')
+    else:
+        form = ClienteForm(instance=cliente)
+    
+    context = {'form': form, 'cliente': cliente}
+    return render(request, 'gestion/editar_cliente.html', context)
 
 
 # ============================================
-# UC-002: REGISTRAR VEHÍCULO (Recepcionista)
+# UC-002: GESTIÓN DE VEHÍCULOS (Recepcionista)
 # ============================================
 @login_required
+@user_passes_test(es_recepcionista_o_encargado)
 def lista_vehiculos(request):
     """Vista para listar vehículos"""
-    vehiculos = Vehiculo.objects.select_related('cliente').all()
-    context = {'vehiculos': vehiculos}
+    vehiculos = Vehiculo.objects.select_related('cliente').all().order_by('-id')
+    
+    # Búsqueda
+    buscar = request.GET.get('buscar')
+    if buscar:
+        vehiculos = vehiculos.filter(
+            Q(patente__icontains=buscar) |
+            Q(marca__icontains=buscar) |
+            Q(modelo__icontains=buscar) |
+            Q(cliente__nombre__icontains=buscar) |
+            Q(cliente__apellido__icontains=buscar)
+        )
+    
+    context = {'vehiculos': vehiculos, 'buscar': buscar}
     return render(request, 'gestion/lista_vehiculos.html', context)
 
 
 @login_required
+@user_passes_test(es_recepcionista_o_encargado)
 def registrar_vehiculo(request):
-    """Vista para que el recepcionista registre vehículos"""
-    clientes = Cliente.objects.all()
+    """Vista para registrar un nuevo vehículo"""
+    if request.method == 'POST':
+        form = VehiculoForm(request.POST)
+        if form.is_valid():
+            vehiculo = form.save()
+            messages.success(request, f'Vehículo {vehiculo.patente} registrado exitosamente')
+            return redirect('gestion:lista_vehiculos')
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario')
+    else:
+        form = VehiculoForm()
+    
+    context = {'form': form}
+    return render(request, 'gestion/registrar_vehiculo.html', context)
+
+
+@login_required
+@user_passes_test(es_recepcionista_o_encargado)
+def editar_vehiculo(request, pk):
+    """Vista para editar un vehículo existente"""
+    vehiculo = get_object_or_404(Vehiculo, pk=pk)
     
     if request.method == 'POST':
-        messages.success(request, 'Vehículo registrado exitosamente')
-        return redirect('gestion:lista_vehiculos')
+        form = VehiculoForm(request.POST, instance=vehiculo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Vehículo {vehiculo.patente} actualizado exitosamente')
+            return redirect('gestion:lista_vehiculos')
+    else:
+        form = VehiculoForm(instance=vehiculo)
     
-    context = {'clientes': clientes}
-    return render(request, 'gestion/registrar_vehiculo.html', context)
+    context = {'form': form, 'vehiculo': vehiculo}
+    return render(request, 'gestion/editar_vehiculo.html', context)
+
+
+# ============================================
+# GESTIÓN DE ÓRDENES DE TRABAJO (Recepcionista)
+# ============================================
+@login_required
+@user_passes_test(es_recepcionista_o_encargado)
+def crear_orden(request):
+    """Vista para crear una nueva orden de trabajo"""
+    if request.method == 'POST':
+        form = OrdenTrabajoForm(request.POST)
+        if form.is_valid():
+            orden = form.save(commit=False)
+            orden.estado = 'recepcionado'
+            orden.save()
+            messages.success(request, f'Orden #{orden.id} creada exitosamente')
+            return redirect('gestion:orden_detail', pk=orden.id)
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario')
+    else:
+        form = OrdenTrabajoForm()
+    
+    context = {'form': form}
+    return render(request, 'gestion/crear_orden.html', context)
+
+
+@login_required
+@user_passes_test(es_mecanico, login_url='/gestion/login/')
+def agregar_bitacora(request, pk):
+    """Vista para agregar bitácora - solo mecánicos"""
+    orden = get_object_or_404(OrdenTrabajo, pk=pk)
+    
+    # Verificar que el mecánico tenga asignada esta orden
+    if hasattr(request.user, 'mecanico'):
+        if orden.mecanico_asignado != request.user.mecanico:
+            messages.error(request, 'No tienes permiso para agregar bitácoras a esta orden')
+            return redirect('gestion:orden_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = BitacoraForm(request.POST)
+        if form.is_valid():
+            bitacora = form.save(commit=False)
+            bitacora.orden = orden
+            bitacora.save()
+            form.save_m2m()  # Guardar relaciones many-to-many (procedimientos)
+            messages.success(request, 'Bitácora agregada exitosamente')
+            return redirect('gestion:orden_detail', pk=pk)
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario')
+    else:
+        form = BitacoraForm()
+    
+    context = {
+        'form': form,
+        'orden': orden
+    }
+    return render(request, 'gestion/agregar_bitacora.html', context)
+
+
+@login_required
+@user_passes_test(es_encargado, login_url='/gestion/login/')
+def agregar_presupuesto(request, pk):
+    """Vista para agregar presupuesto - solo encargados"""
+    orden = get_object_or_404(OrdenTrabajo, pk=pk)
+    
+    if request.method == 'POST':
+        form = PresupuestoForm(request.POST)
+        if form.is_valid():
+            presupuesto = form.save(commit=False)
+            presupuesto.orden = orden
+            presupuesto.save()
+            form.save_m2m()  # Guardar relaciones many-to-many (items)
+            messages.success(request, 'Presupuesto agregado exitosamente')
+            return redirect('gestion:orden_detail', pk=pk)
+        else:
+            messages.error(request, 'Por favor corrija los errores en el formulario')
+    else:
+        form = PresupuestoForm()
+    
+    context = {
+        'form': form,
+        'orden': orden
+    }
+    return render(request, 'gestion/agregar_presupuesto.html', context)
 
 
 # ============================================
@@ -336,15 +507,7 @@ def actualizar_estado_orden(request, pk):
     return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
 
-# ============================================
-# UC-007: GENERAR FACTURA (Pendiente)
-# ============================================
-@login_required
-def generar_factura(request, pk):
-    """Vista placeholder para generar factura - UC-007"""
-    orden = get_object_or_404(OrdenTrabajo, pk=pk)
-    messages.info(request, 'Función de facturación en desarrollo')
-    return redirect('gestion:orden_detail', pk=pk)
+
 
 
 def login_view(request):
@@ -528,6 +691,8 @@ def generar_factura(request, pk):
     Genera un comprobante/factura HTML para una orden.
     UC-007 del documento de requisitos.
     """
+    from django.utils import timezone
+    
     orden = get_object_or_404(
         OrdenTrabajo.objects.select_related('cliente', 'vehiculo'),
         pk=pk
@@ -575,49 +740,3 @@ def generar_factura(request, pk):
 
 
 
-@login_required
-def dashboard_view(request):
-    """Dashboard principal - HU003"""
-    stats = {
-        'total_ordenes': OrdenTrabajo.objects.count(),
-        'activas': OrdenTrabajo.objects.exclude(estado='entregado').count(),
-        'recepcionadas': OrdenTrabajo.objects.filter(estado='recepcionado').count(),
-        'en_diagnostico': OrdenTrabajo.objects.filter(estado='diagnostico').count(),
-        'en_reparacion': OrdenTrabajo.objects.filter(estado='en_reparacion').count(),
-        'listas': OrdenTrabajo.objects.filter(estado='listo_entrega').count(),
-    }
-    
-    alertas = Alerta.objects.filter(resuelta=False).order_by('-fecha_creacion')[:5]
-    ordenes_recientes = OrdenTrabajo.objects.select_related(
-        'vehiculo', 'cliente'
-    ).exclude(estado='entregado').order_by('-fecha_ingreso')[:10]
-    
-    mecanicos_stats = Mecanico.objects.annotate(
-        ordenes_activas=Count('ordenes', filter=~Q(ordenes__estado='entregado'))
-    ).filter(disponible=True)
-    
-    context = {
-        'stats': stats,
-        'alertas': alertas,
-        'ordenes_recientes': ordenes_recientes,
-        'mecanicos_stats': mecanicos_stats,
-    }
-    return render(request, 'gestion/dashboard.html', context)
-
-@login_required
-def orden_list(request):
-    ordenes_list = OrdenTrabajo.objects.select_related(
-        'vehiculo', 'cliente'
-    ).all().order_by('-fecha_ingreso')
-    
-    # ... (código de filtros) ...
-    
-    paginator = Paginator(ordenes_list, 15) # 15 por página
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'page_obj': page_obj,
-        # ...
-    }
-    return render(request, 'gestion/orden_list.html', context)

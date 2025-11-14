@@ -158,6 +158,18 @@ class OrdenTrabajo(ClusterableModel):
 
     def __str__(self):
         return f"Orden #{self.id} - {self.vehiculo.patente}"
+    
+    def get_estado_color(self):
+        """Devuelve el color Bootstrap según el estado de la orden"""
+        colores = {
+            'recepcionado': 'secondary',
+            'diagnostico': 'info',
+            'en_reparacion': 'warning',
+            'espera_repuesto': 'danger',
+            'listo_entrega': 'success',
+            'entregado': 'dark',
+        }
+        return colores.get(self.estado, 'secondary')
 
     class Meta:
         verbose_name = "Orden de Trabajo"
