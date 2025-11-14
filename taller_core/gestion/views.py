@@ -1,5 +1,6 @@
 # taller_core/gestion/views.py
 
+from datetime import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count
@@ -7,11 +8,12 @@ from django.contrib import messages
 from django.http import JsonResponse
 from .models import (
     Cliente, Vehiculo, OrdenTrabajo, Mecanico, 
-    ZonaTrabajo, Bitacora, Repuesto, Alerta, Presupuesto
-)
+    ZonaTrabajo, Bitacora, Repuesto, Alerta, Presupuesto)
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render, redirect
+from django.db.models import Sum
+from django.core.paginator import Paginator
 
 # ============================================
 # UC-001: REGISTRAR CLIENTE (Recepcionista)
@@ -514,3 +516,108 @@ def mi_dashboard(request):
     
     # Sin rol
     return render(request, 'gestion/sin_acceso.html')
+
+
+
+# ============================================
+# UC-007: GENERAR FACTURA
+# ============================================
+@login_required
+def generar_factura(request, pk):
+    """
+    Genera un comprobante/factura HTML para una orden.
+    UC-007 del documento de requisitos.
+    """
+    orden = get_object_or_404(
+        OrdenTrabajo.objects.select_related('cliente', 'vehiculo'),
+        pk=pk
+    )
+    
+    # Calcular costos (esto debería estar en los modelos, pero lo hacemos aquí por simplicidad)
+    presupuestos = orden.presupuestos.all()
+    bitacoras = orden.bitacoras.prefetch_related('repuestos_usados__repuesto')
+    
+    # Suma de mano de obra y repuestos desde presupuestos
+    costo_mano_obra = presupuestos.aggregate(Sum('costo_mano_obra'))['costo_mano_obra__sum'] or 0
+    costo_repuestos_presupuesto = presupuestos.aggregate(Sum('costo_repuestos'))['costo_repuestos__sum'] or 0
+    
+    # Detalle de repuestos desde bitácoras (más preciso)
+    repuestos_usados = []
+    total_repuestos = 0
+    for bitacora in bitacoras:
+        for item in bitacora.repuestos_usados.all():
+            subtotal = item.cantidad * item.repuesto.precio_venta
+            repuestos_usados.append({
+                'nombre': item.repuesto.nombre,
+                'cantidad': item.cantidad,
+                'precio_unitario': item.repuesto.precio_venta,
+                'subtotal': subtotal
+            })
+            total_repuestos += subtotal
+
+    # Totales
+    subtotal = costo_mano_obra + total_repuestos
+    iva = subtotal * 0.19
+    total_final = subtotal + iva
+
+    context = {
+        'orden': orden,
+        'costo_mano_obra': costo_mano_obra,
+        'repuestos_usados': repuestos_usados,
+        'total_repuestos': total_repuestos,
+        'subtotal': subtotal,
+        'iva': iva,
+        'total_final': total_final,
+        'fecha_emision': timezone.now(),
+    }
+    
+    return render(request, 'gestion/factura.html', context)
+
+
+
+@login_required
+def dashboard_view(request):
+    """Dashboard principal - HU003"""
+    stats = {
+        'total_ordenes': OrdenTrabajo.objects.count(),
+        'activas': OrdenTrabajo.objects.exclude(estado='entregado').count(),
+        'recepcionadas': OrdenTrabajo.objects.filter(estado='recepcionado').count(),
+        'en_diagnostico': OrdenTrabajo.objects.filter(estado='diagnostico').count(),
+        'en_reparacion': OrdenTrabajo.objects.filter(estado='en_reparacion').count(),
+        'listas': OrdenTrabajo.objects.filter(estado='listo_entrega').count(),
+    }
+    
+    alertas = Alerta.objects.filter(resuelta=False).order_by('-fecha_creacion')[:5]
+    ordenes_recientes = OrdenTrabajo.objects.select_related(
+        'vehiculo', 'cliente'
+    ).exclude(estado='entregado').order_by('-fecha_ingreso')[:10]
+    
+    mecanicos_stats = Mecanico.objects.annotate(
+        ordenes_activas=Count('ordenes', filter=~Q(ordenes__estado='entregado'))
+    ).filter(disponible=True)
+    
+    context = {
+        'stats': stats,
+        'alertas': alertas,
+        'ordenes_recientes': ordenes_recientes,
+        'mecanicos_stats': mecanicos_stats,
+    }
+    return render(request, 'gestion/dashboard.html', context)
+
+@login_required
+def orden_list(request):
+    ordenes_list = OrdenTrabajo.objects.select_related(
+        'vehiculo', 'cliente'
+    ).all().order_by('-fecha_ingreso')
+    
+    # ... (código de filtros) ...
+    
+    paginator = Paginator(ordenes_list, 15) # 15 por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        # ...
+    }
+    return render(request, 'gestion/orden_list.html', context)

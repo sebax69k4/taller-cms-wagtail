@@ -29,4 +29,7 @@ urlpatterns = [
     # API y Acciones
     path('ordenes/<int:pk>/estado/', views.actualizar_estado_orden, name='actualizar_estado'),
     path('ordenes/<int:pk>/factura/', views.generar_factura, name='generar_factura'),
+
+    # UC-007
+    path('ordenes/<int:pk>/factura/', views.generar_factura, name='generar_factura'),
 ]

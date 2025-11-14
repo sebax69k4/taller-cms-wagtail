@@ -423,4 +423,46 @@
         </div>
     </div>
 </div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col">
+                <a href="{% url 'gestion:orden_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+            <div class="col text-end">
+                <a href="/admin/snippets/gestion/ordentrabajo/edit/{{ orden.id }}/" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Editar Orden
+                </a>
+                
+                {# BOTÓN DE FACTURA #}
+                {% if orden.estado in "listo_entrega,entregado" %}
+                <a href="{% url 'gestion:generar_factura' orden.id %}" class="btn btn-success">
+                    <i class="fas fa-file-invoice"></i> Generar Factura
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
+{# Paginación #}
+{% if page_obj.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
