@@ -366,7 +366,25 @@ def login_view(request):
                 # Redirigir según rol
                 return redirect_segun_rol(user)
             else:
-                messages.error(request, 'Usuario o contraseña incorrectos')
+                # Mensajes más informativos para ayudar al debugging
+                from django.contrib.auth.models import User
+                try:
+                    found = User.objects.filter(username=username).first()
+                except Exception:
+                    found = None
+
+                if not found:
+                    messages.error(request, 'Usuario no encontrado')
+                else:
+                    # Verificar estado y contraseña sin revelar detalles sensibles
+                    if not found.is_active:
+                        messages.error(request, 'El usuario existe pero está inactivo. Contacta al administrador.')
+                    else:
+                        # Comprobar si la contraseña es incorrecta
+                        if not found.check_password(password):
+                            messages.error(request, 'Contraseña incorrecta')
+                        else:
+                            messages.error(request, 'No se pudo autenticar al usuario (verifica configuración)')
         else:
             messages.error(request, 'Usuario o contraseña incorrectos')
     else:
@@ -384,29 +402,42 @@ def logout_view(request):
 
 
 def redirect_segun_rol(user):
-    """Función auxiliar para redirigir según el rol del usuario"""
-    
+    """Función auxiliar para redirigir según el rol del usuario
+
+    Esta versión normaliza nombres de grupo (quita mayúsculas y diacríticos)
+    para evitar problemas si el nombre del grupo tiene o no acentos.
+    """
+
     # Superusuario al admin de Wagtail
     if user.is_superuser:
         return redirect('/admin/')
-    
+
     # Intentar usar perfil personalizado
     try:
         perfil = user.perfil
         return redirect(perfil.get_dashboard_url())
-    except:
+    except Exception:
         pass
-    
-    # Si no tiene perfil, usar grupo
-    grupos = user.groups.values_list('name', flat=True)
-    
-    if 'Encargado' in grupos:
+
+    # Si no tiene perfil, usar grupo (comparaciones insensibles a mayúsculas y diacríticos)
+    import unicodedata
+
+    def _normalize(s):
+        if not s:
+            return ''
+        s = s.lower()
+        s = unicodedata.normalize('NFKD', s)
+        return ''.join(c for c in s if not unicodedata.combining(c))
+
+    grupos = [ _normalize(g) for g in user.groups.values_list('name', flat=True) ]
+
+    if 'encargado' in grupos:
         return redirect('gestion:dashboard')
-    elif 'Mecánico' in grupos:
+    elif 'mecanico' in grupos or any('mecanico' in g for g in grupos):
         return redirect('gestion:orden_list')
-    elif 'Recepcionista' in grupos:
+    elif 'recepcionista' in grupos:
         return redirect('gestion:orden_list')
-    
+
     # Default
     return redirect('gestion:dashboard')
 
@@ -427,12 +458,22 @@ def mi_dashboard(request):
         try:
             rol = request.user.perfil.rol
         except:
-            grupos = request.user.groups.values_list('name', flat=True)
-            if 'Encargado' in grupos:
+            # Fallback: detectar rol por grupos (insensible a mayúsculas/acentos)
+            import unicodedata
+
+            def _normalize(s):
+                if not s:
+                    return ''
+                s = s.lower()
+                s = unicodedata.normalize('NFKD', s)
+                return ''.join(c for c in s if not unicodedata.combining(c))
+
+            grupos = [ _normalize(g) for g in request.user.groups.values_list('name', flat=True) ]
+            if 'encargado' in grupos:
                 rol = 'encargado'
-            elif 'Mecánico' in grupos:
+            elif 'mecanico' in grupos or any('mecanico' in g for g in grupos):
                 rol = 'mecanico'
-            elif 'Recepcionista' in grupos:
+            elif 'recepcionista' in grupos:
                 rol = 'recepcionista'
             else:
                 rol = 'sin_rol'

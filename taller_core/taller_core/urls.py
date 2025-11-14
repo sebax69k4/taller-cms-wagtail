@@ -9,8 +9,12 @@ from wagtail import urls as wagtail_urls
 from wagtail.documents import urls as wagtaildocs_urls
 
 from search import views as search_views
+from home import views as home_views # Importar vistas de home
 
 urlpatterns = [
+    # --- PÁGINA DE BIENVENIDA COMO RAÍZ ---
+    path("", home_views.welcome_page, name="welcome"),
+
     path("django-admin/", admin.site.urls),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),
@@ -19,8 +23,9 @@ urlpatterns = [
     # URLs de la app gestion
     path('gestion/', include('gestion.urls')),
     
-    # Wagtail pages - DEBE IR AL FINAL
-    path("", include(wagtail_urls)),
+    # --- WAGTAIL PAGES EN UN SUBDIRECTORIO ---
+    # Se mueven a /pages/ para que no interfieran con la raíz
+    path("pages/", include(wagtail_urls)),
 ]
 
 if settings.DEBUG:

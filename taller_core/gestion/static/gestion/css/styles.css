@@ -1,29 +1,189 @@
 /* taller_core/gestion/static/gestion/css/styles.css */
 
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    min-height: 100vh;
 }
 
+/* Navbar personalizado */
+.navbar-dark {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+/* Cards mejoradas */
 .card {
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
 }
 
 .card-header {
     font-weight: 600;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 1rem 1.5rem;
 }
 
+/* Badges mejorados */
+.badge {
+    padding: 6px 14px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    border-radius: 20px;
+}
+
+/* Botones personalizados */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+}
+
+/* Tablas mejoradas */
 .table {
     background-color: white;
+    border-radius: 8px;
 }
 
-.badge {
-    padding: 6px 12px;
-    font-weight: 500;
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
-.navbar {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.table-hover tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+/* Dashboard Stats Cards */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-warning,
+.card.bg-info,
+.card.bg-danger {
+    border: none;
+    color: white;
+}
+
+.card.bg-warning {
+    color: #212529 !important;
+}
+
+.card-body h2,
+.card-body h3 {
+    font-weight: 700;
+}
+
+/* Breadcrumb personalizado */
+.breadcrumb {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    font-size: 1.2rem;
+}
+
+/* Footer */
+footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    margin-top: auto;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .card {
+        margin-bottom: 16px;
+    }
+}
+
+/* Login page específico */
+.login-card {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Toast notifications */
+.toast {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Alerts mejoradas */
+.alert {
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: var(--success-color);
+}
+
+.alert-danger {
+    border-left-color: var(--danger-color);
+}
+
+.alert-warning {
+    border-left-color: var(--warning-color);
+}
+
+.alert-info {
+    border-left-color: var(--info-color);
 }
